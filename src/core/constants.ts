@@ -4,7 +4,7 @@ import { battleSkills, defaultBattlePriority, defaultUnlockedBattleSkills } from
 // 默认开局主角数据。
 export const starterHero: Character = {
   id: 'hero-1',
-  name: '见习冒险者',
+  name: '战士',
   classId: 'warrior',
   level: 1,
   gold: 0,
@@ -13,9 +13,8 @@ export const starterHero: Character = {
   stats: {
     hp: 24,
     maxHp: 24,
-    attack: 6,
-    defense: 2,
-    speed: 8,
+    strength: 5,
+    agility: 0,
   },
 };
 
@@ -29,9 +28,8 @@ export const starterEnemy: Enemy = {
   stats: {
     hp: 18,
     maxHp: 18,
-    attack: 4,
-    defense: 1,
-    speed: 5,
+    strength: 0,
+    agility: 0,
   },
 };
 

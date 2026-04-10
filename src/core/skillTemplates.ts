@@ -28,7 +28,8 @@ function gainBlockTemplate(
   _context: BattleSkillEffectContext,
   definition: BattleSkillDefinition,
 ): BattleSkillEffectResult {
-  const blockGain = definition.numbers.blockGain ?? 0;
+  const blockMultiplier = 1;
+  const blockGain = Math.max(0, Math.floor(_context.hero.stats.agility * blockMultiplier) + (definition.numbers.blockGain ?? 0));
 
   return {
     heroDamage: Math.max(0, definition.numbers.bonusDamage ?? 0),

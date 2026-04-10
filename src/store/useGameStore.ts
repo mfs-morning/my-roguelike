@@ -9,7 +9,13 @@ import {
 } from '../core/constants';
 import { simulateBattleRound } from '../core/engine';
 import { generateMapSkeleton } from '../core/generator';
-import { buildReward, rollBattleSkillDrop } from '../core/reward';
+import {
+  buildReward,
+  INITIAL_SKILL_DROP_CHANCE,
+  MAX_SKILL_DROP_CHANCE,
+  rollBattleSkillDropChoices,
+  SKILL_DROP_CHANCE_STEP,
+} from '../core/reward';
 import { getNextPlayableNodes, markNodeCleared } from '../core/mapProgress';
 import { moveSkill, pickHeroSkill, reorderSkills, updateCooldowns } from '../core/battlePriority';
 import type {
@@ -37,6 +43,7 @@ interface GameState {
   battleSummary: BattleSummary | null;
   battlePriority: BattleSkillId[];
   unlockedBattleSkills: BattleSkillId[];
+  battleSkillDropChance: number;
   battleCooldowns: BattleCooldownState;
   battleSkillRuntimeState: BattleSkillRuntimeState;
   setView: (view: ViewName) => void;
@@ -144,7 +151,7 @@ function buildRestReward(nodeId: string): BattleReward {
     description: '短暂休息后，你恢复了一部分生命值。',
     gold: 0,
     maxHpBoost: 0,
-    attackBoost: 0,
+    strengthBoost: 0,
     heal: 8,
   };
 }
@@ -159,8 +166,8 @@ function buildEnemyForRoom(roomId: string, roomKind: GeneratedMap['nodes'][numbe
     ...enemy.stats,
     hp: roomKind === 'boss' ? 34 : roomKind === 'elite' ? 28 : starterEnemy.stats.hp,
     maxHp: roomKind === 'boss' ? 34 : roomKind === 'elite' ? 28 : starterEnemy.stats.maxHp,
-    attack: roomKind === 'boss' ? 8 : roomKind === 'elite' ? 6 : starterEnemy.stats.attack,
-    defense: roomKind === 'elite' ? 2 : starterEnemy.stats.defense,
+    strength: roomKind === 'boss' ? 8 : roomKind === 'elite' ? 6 : starterEnemy.stats.strength,
+    agility: roomKind === 'elite' ? 2 : starterEnemy.stats.agility,
   };
   enemy.block = 0;
   enemy.statusEffects = [];
@@ -180,6 +187,7 @@ function buildInitialState() {
     battleSummary: null,
     battlePriority: cloneBattlePriority(),
     unlockedBattleSkills: cloneUnlockedBattleSkills(),
+    battleSkillDropChance: INITIAL_SKILL_DROP_CHANCE,
     battleCooldowns: cloneBattleCooldowns(),
     battleSkillRuntimeState: cloneBattleSkillRuntimeState(),
   };
@@ -325,19 +333,24 @@ export const useGameStore = create<GameState>((set) => ({
 
       if (enemyDefeated) {
         const clearedBattleCount = state.generatedMap.nodes.filter((node) => node.kind === 'battle' && node.cleared).length;
-        const grantedSkillId = rollBattleSkillDrop(currentNode, state.unlockedBattleSkills, clearedBattleCount);
-        const reward = grantedSkillId
-          ? buildReward(currentNode, { grantedSkillId })
+        const grantedSkillChoices = rollBattleSkillDropChoices(
+          currentNode,
+          state.unlockedBattleSkills,
+          clearedBattleCount,
+          state.battleSkillDropChance,
+        );
+        const reward = grantedSkillChoices.length > 0
+          ? buildReward(currentNode, { grantedSkillChoices })
           : buildReward(currentNode);
         const victoryLogs = [
           ...nextLogs,
           { id: crypto.randomUUID(), text: `${state.enemy.name} 被击败，获得 ${reward.gold} 金币。` },
         ];
 
-        if (grantedSkillId) {
+        if (reward.choices?.some((choice) => choice.grantedSkillId)) {
           victoryLogs.push({
             id: crypto.randomUUID(),
-            text: `你获得了新技能【${battleSkills[grantedSkillId].label}】。`,
+            text: `你发现了 ${reward.choices.length} 个可带走的新技能。`,
           });
         }
 
@@ -350,6 +363,9 @@ export const useGameStore = create<GameState>((set) => ({
           battleLog: victoryLogs,
           battleSummary: nextSummary,
           battleCooldowns: nextCooldowns,
+          battleSkillDropChance: reward.choices?.some((choice) => choice.grantedSkillId)
+            ? INITIAL_SKILL_DROP_CHANCE
+            : Math.min(MAX_SKILL_DROP_CHANCE, state.battleSkillDropChance + SKILL_DROP_CHANCE_STEP),
           pendingReward: {
             ...reward,
             battleSummary: nextSummary,
@@ -378,7 +394,7 @@ export const useGameStore = create<GameState>((set) => ({
           description: '你在遗迹中倒下了，只能回镇上重新整顿。',
           gold: 0,
           maxHpBoost: 0,
-          attackBoost: 0,
+          strengthBoost: 0,
           heal: 0,
           battleSummary: nextSummary,
         },
@@ -404,8 +420,9 @@ export const useGameStore = create<GameState>((set) => ({
             ...state.pendingReward,
             gold: selectedChoice.gold,
             maxHpBoost: selectedChoice.maxHpBoost,
-            attackBoost: selectedChoice.attackBoost,
+            strengthBoost: selectedChoice.strengthBoost,
             heal: selectedChoice.heal,
+            ...(selectedChoice.grantedSkillId ? { grantedSkillId: selectedChoice.grantedSkillId } : {}),
           }
         : state.pendingReward;
 
@@ -421,7 +438,7 @@ export const useGameStore = create<GameState>((set) => ({
           ...state.hero.stats,
           maxHp: nextMaxHp,
           hp: nextHp,
-          attack: state.hero.stats.attack + appliedReward.attackBoost,
+          strength: state.hero.stats.strength + appliedReward.strengthBoost,
         },
       };
       const nextUnlockedBattleSkills = appliedReward.grantedSkillId

@@ -19,7 +19,7 @@ function App() {
   const reorderBattlePriority = useGameStore((state) => state.reorderBattlePriority);
   const enableBattleSkill = useGameStore((state) => state.enableBattleSkill);
   const disableBattleSkill = useGameStore((state) => state.disableBattleSkill);
-  const effectiveSkillsMap = getEffectiveSkillMap(battleSkillRuntimeState);
+  const effectiveSkillsMap = getEffectiveSkillMap(battleSkillRuntimeState, hero.stats);
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-8 text-[var(--color-text-main)] sm:px-6 lg:px-8">

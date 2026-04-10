@@ -4,8 +4,8 @@ import { applySkillStatusEffects, resolveStartOfTurnStatusEffects } from './stat
 import type { BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy } from '../types';
 
 // 计算本次攻击的基础伤害，至少造成 1 点。
-function getBaseDamage(attack: number, defense: number) {
-  return Math.max(1, attack - defense);
+function getBaseDamage(strength: number, agility: number) {
+  return Math.max(1, strength - agility);
 }
 
 // 先由格挡吸收伤害，再结算生命与剩余格挡。
@@ -74,8 +74,8 @@ export function simulateBattleRound(
     },
   };
 
-  const baseHeroDamage = getBaseDamage(heroAfterStatus.stats.attack, enemy.stats.defense);
-  const baseEnemyDamage = getBaseDamage(enemy.stats.attack, heroAfterStatus.stats.defense);
+  const baseHeroDamage = getBaseDamage(heroAfterStatus.stats.strength, enemy.stats.agility);
+  const baseEnemyDamage = getBaseDamage(enemy.stats.strength, heroAfterStatus.stats.agility);
   const skill = getEffectiveSkill(heroSkillId, runtimeState);
   const effect = skillTemplates[skill.template](
     {

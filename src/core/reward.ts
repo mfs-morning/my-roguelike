@@ -1,8 +1,13 @@
 import { battleSkills, mockBattleSkillDropPool } from './skills';
 import type { BattleReward, BattleSkillId, MapNodeData, RewardChoice } from '../types';
 
+export const INITIAL_SKILL_DROP_CHANCE = 0.15;
+export const SKILL_DROP_CHANCE_STEP = 0.1;
+export const MAX_SKILL_DROP_CHANCE = 0.75;
+
 interface BuildRewardOptions {
   grantedSkillId?: BattleSkillId;
+  grantedSkillChoices?: BattleSkillId[];
 }
 
 function buildChoice(
@@ -19,29 +24,31 @@ function buildChoice(
   };
 }
 
-export function rollBattleSkillDrop(
+export function rollBattleSkillDropChoices(
   node: MapNodeData,
   unlockedSkillIds: BattleSkillId[],
   clearedBattleCount: number,
-): BattleSkillId | undefined {
+  dropChance: number,
+): BattleSkillId[] {
   const remainingSkills = mockBattleSkillDropPool.filter((skillId) => !unlockedSkillIds.includes(skillId));
   if (remainingSkills.length === 0) {
-    return undefined;
+    return [];
   }
 
   if (node.kind !== 'battle' && node.kind !== 'elite' && node.kind !== 'boss') {
-    return undefined;
+    return [];
   }
 
   const guaranteedDrop = node.kind === 'elite' || node.kind === 'boss' || clearedBattleCount < 3;
-  const randomDrop = Math.random() < 0.45;
+  const randomDrop = Math.random() < dropChance;
 
   if (!guaranteedDrop && !randomDrop) {
-    return undefined;
+    return [];
   }
 
-  const randomIndex = Math.floor(Math.random() * remainingSkills.length);
-  return remainingSkills[randomIndex];
+  const shuffledSkills = [...remainingSkills].sort(() => Math.random() - 0.5);
+  const choiceCount = Math.min(node.kind === 'boss' ? 3 : 2, shuffledSkills.length);
+  return shuffledSkills.slice(0, choiceCount);
 }
 
 export function buildReward(node: MapNodeData, options: BuildRewardOptions = {}): BattleReward {
@@ -54,11 +61,11 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
       description: '宝箱里有几件能立刻派上用场的小收获，选一样带走。',
       gold: 0,
       maxHpBoost: 0,
-      attackBoost: 0,
+      strengthBoost: 0,
       heal: 0,
       choices: [
-        buildChoice('gold-cache', '金币袋', '立即获得 16 金币。', { gold: 16, maxHpBoost: 0, attackBoost: 0, heal: 0 }),
-        buildChoice('iron-edge', '磨亮刀锋', '攻击 +2。', { gold: 0, maxHpBoost: 0, attackBoost: 2, heal: 0 }),
+        buildChoice('gold-cache', '金币袋', '立即获得 16 金币。', { gold: 16, maxHpBoost: 0, strengthBoost: 0, heal: 0 }),
+        buildChoice('iron-edge', '磨亮刀锋', '力量 +2。', { gold: 0, maxHpBoost: 0, strengthBoost: 2, heal: 0 }),
       ],
     };
   }
@@ -72,11 +79,11 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
       description: '祝福之火给出两种不同方向的强化。',
       gold: 0,
       maxHpBoost: 0,
-      attackBoost: 0,
+      strengthBoost: 0,
       heal: 0,
       choices: [
-        buildChoice('vital-blessing', '生命祝福', '生命上限 +5，并回复 5 点生命。', { gold: 0, maxHpBoost: 5, attackBoost: 0, heal: 5 }),
-        buildChoice('fury-blessing', '锋锐祝福', '攻击 +2。', { gold: 0, maxHpBoost: 0, attackBoost: 2, heal: 0 }),
+        buildChoice('vital-blessing', '生命祝福', '生命上限 +5，并回复 5 点生命。', { gold: 0, maxHpBoost: 5, strengthBoost: 0, heal: 5 }),
+        buildChoice('fury-blessing', '锋锐祝福', '力量 +2。', { gold: 0, maxHpBoost: 0, strengthBoost: 2, heal: 0 }),
       ],
     };
   }
@@ -90,16 +97,20 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
       description: '你在废墟里碰到一段插曲，只能挑一个结果带走。',
       gold: 0,
       maxHpBoost: 0,
-      attackBoost: 0,
+      strengthBoost: 0,
       heal: 0,
       choices: [
-        buildChoice('event-gold', '捡走散币', '获得 10 金币。', { gold: 10, maxHpBoost: 0, attackBoost: 0, heal: 0 }),
-        buildChoice('event-rest', '短暂整备', '回复 6 点生命。', { gold: 0, maxHpBoost: 0, attackBoost: 0, heal: 6 }),
+        buildChoice('event-gold', '捡走散币', '获得 10 金币。', { gold: 10, maxHpBoost: 0, strengthBoost: 0, heal: 0 }),
+        buildChoice('event-rest', '短暂整备', '回复 6 点生命。', { gold: 0, maxHpBoost: 0, strengthBoost: 0, heal: 6 }),
       ],
     };
   }
 
-  const skillText = options.grantedSkillId ? ` 你还缴获了技能【${battleSkills[options.grantedSkillId].label}】。` : '';
+  const skillText = options.grantedSkillChoices?.length
+    ? ` 你可以从 ${options.grantedSkillChoices.length} 个技能中选择一个带走。`
+    : options.grantedSkillId
+      ? ` 你还缴获了技能【${battleSkills[options.grantedSkillId].label}】。`
+      : '';
   const battleRewardBase = {
     outcome: 'victory' as const,
     nodeId: node.id,
@@ -113,9 +124,29 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
           : '你拿下了当前房间。') + skillText,
     gold: node.kind === 'elite' ? 12 : node.kind === 'boss' ? 20 : 5,
     maxHpBoost: 0,
-    attackBoost: 0,
+    strengthBoost: 0,
     heal: 0,
   };
+
+  if (options.grantedSkillChoices?.length) {
+    return {
+      ...battleRewardBase,
+      choices: options.grantedSkillChoices.map((skillId) =>
+        buildChoice(
+          `skill-${skillId}`,
+          battleSkills[skillId].label,
+          battleSkills[skillId].description,
+          {
+            gold: 0,
+            maxHpBoost: 0,
+            strengthBoost: 0,
+            heal: 0,
+            grantedSkillId: skillId,
+          },
+        ),
+      ),
+    };
+  }
 
   return options.grantedSkillId
     ? {

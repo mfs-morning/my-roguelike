@@ -17,9 +17,8 @@ export interface BattleStatusEffect {
 export interface CharacterStats {
   hp: number;
   maxHp: number;
-  attack: number;
-  defense: number;
-  speed: number;
+  strength: number;
+  agility: number;
 }
 
 // 玩家角色的核心数据。
@@ -164,8 +163,9 @@ export interface RewardChoice {
   description: string;
   gold: number;
   maxHpBoost: number;
-  attackBoost: number;
+  strengthBoost: number;
   heal: number;
+  grantedSkillId?: BattleSkillId;
 }
 
 // 奖励页使用的轻量结算结构。
@@ -184,7 +184,7 @@ export interface BattleReward {
   description: string;
   gold: number;
   maxHpBoost: number;
-  attackBoost: number;
+  strengthBoost: number;
   heal: number;
   grantedSkillId?: BattleSkillId;
   choices?: RewardChoice[];

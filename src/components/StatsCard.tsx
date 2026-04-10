@@ -61,16 +61,12 @@ export function StatsCard({
 
         <ul className="grid list-none gap-2 p-0 text-sm text-[var(--color-text-muted)]">
           <li className="flex items-center justify-between rounded-xl bg-[rgba(242,230,201,0.04)] px-3 py-2">
-            <span>攻击</span>
-            <span className="font-bold text-[var(--color-text-main)]">{stats.attack}</span>
+            <span>力量</span>
+            <span className="font-bold text-[var(--color-text-main)]">{stats.strength}</span>
           </li>
           <li className="flex items-center justify-between rounded-xl bg-[rgba(242,230,201,0.04)] px-3 py-2">
-            <span>防御</span>
-            <span className="font-bold text-[var(--color-text-main)]">{stats.defense}</span>
-          </li>
-          <li className="flex items-center justify-between rounded-xl bg-[rgba(242,230,201,0.04)] px-3 py-2">
-            <span>速度</span>
-            <span className="font-bold text-[var(--color-text-main)]">{stats.speed}</span>
+            <span>敏捷</span>
+            <span className="font-bold text-[var(--color-text-main)]">{stats.agility}</span>
           </li>
           <li className="flex items-center justify-between rounded-xl bg-[rgba(96,165,250,0.08)] px-3 py-2">
             <span>格挡</span>
