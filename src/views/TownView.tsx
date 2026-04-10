@@ -24,7 +24,7 @@ export function TownView() {
 
       <div className="flex flex-wrap gap-2">
         <StatusBadge tone="bright">金币 {hero.gold}</StatusBadge>
-        <StatusBadge>已推进 {clearedCount}/{generatedMap.nodes.length}</StatusBadge>
+        <StatusBadge>已推进 {clearedCount}/{generatedMap.height}</StatusBadge>
       </div>
 
       <div className="flex flex-wrap gap-3">

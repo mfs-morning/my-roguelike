@@ -1,8 +1,15 @@
+import { battleSkills } from '../core/skills';
 import { create } from 'zustand';
-import { createBattleCooldownState, defaultBattlePriority, starterEnemy, starterHero } from '../core/constants';
+import {
+  createBattleCooldownState,
+  defaultBattlePriority,
+  defaultUnlockedBattleSkills,
+  starterEnemy,
+  starterHero,
+} from '../core/constants';
 import { simulateBattleRound } from '../core/engine';
 import { generateMapSkeleton } from '../core/generator';
-import { buildReward } from '../core/reward';
+import { buildReward, rollBattleSkillDrop } from '../core/reward';
 import { getNextPlayableNodes, markNodeCleared } from '../core/mapProgress';
 import { moveSkill, pickHeroSkill, reorderSkills, updateCooldowns } from '../core/battlePriority';
 import type {
@@ -29,6 +36,7 @@ interface GameState {
   pendingReward: BattleReward | null;
   battleSummary: BattleSummary | null;
   battlePriority: BattleSkillId[];
+  unlockedBattleSkills: BattleSkillId[];
   battleCooldowns: BattleCooldownState;
   battleSkillRuntimeState: BattleSkillRuntimeState;
   setView: (view: ViewName) => void;
@@ -58,6 +66,11 @@ function cloneBattlePriority() {
   return [...defaultBattlePriority] as BattleSkillId[];
 }
 
+// 复制默认已解锁技能列表。
+function cloneUnlockedBattleSkills() {
+  return [...defaultUnlockedBattleSkills] as BattleSkillId[];
+}
+
 // 创建一份新的技能冷却表，供当前战斗使用。
 function cloneBattleCooldowns() {
   return createBattleCooldownState();
@@ -80,6 +93,15 @@ function enableSkillToPriority(priority: BattleSkillId[], skillId: BattleSkillId
   }
 
   return [...priority, skillId];
+}
+
+// 将新技能加入解锁池，保持唯一性。
+function unlockBattleSkill(unlockedSkills: BattleSkillId[], skillId: BattleSkillId) {
+  if (unlockedSkills.includes(skillId)) {
+    return unlockedSkills;
+  }
+
+  return [...unlockedSkills, skillId];
 }
 
 // 将技能强化合并到当前局内状态，适合奖励、事件或遗物带来的即时升级。
@@ -157,6 +179,7 @@ function buildInitialState() {
     pendingReward: null,
     battleSummary: null,
     battlePriority: cloneBattlePriority(),
+    unlockedBattleSkills: cloneUnlockedBattleSkills(),
     battleCooldowns: cloneBattleCooldowns(),
     battleSkillRuntimeState: cloneBattleSkillRuntimeState(),
   };
@@ -177,9 +200,15 @@ export const useGameStore = create<GameState>((set) => ({
       battlePriority: reorderSkills(state.battlePriority, fromSkillId, toSkillId),
     })),
   enableBattleSkill: (skillId) =>
-    set((state) => ({
-      battlePriority: enableSkillToPriority(state.battlePriority, skillId),
-    })),
+    set((state) => {
+      if (!state.unlockedBattleSkills.includes(skillId)) {
+        return state;
+      }
+
+      return {
+        battlePriority: enableSkillToPriority(state.battlePriority, skillId),
+      };
+    }),
   disableBattleSkill: (skillId) =>
     set((state) => {
       if (state.battlePriority.length <= 1 || !state.battlePriority.includes(skillId)) {
@@ -295,17 +324,28 @@ export const useGameStore = create<GameState>((set) => ({
       }
 
       if (enemyDefeated) {
-        const reward = buildReward(currentNode);
+        const clearedBattleCount = state.generatedMap.nodes.filter((node) => node.kind === 'battle' && node.cleared).length;
+        const grantedSkillId = rollBattleSkillDrop(currentNode, state.unlockedBattleSkills, clearedBattleCount);
+        const reward = buildReward(currentNode, { grantedSkillId });
+        const victoryLogs = [
+          ...nextLogs,
+          { id: crypto.randomUUID(), text: `${state.enemy.name} 被击败，获得 ${reward.gold} 金币。` },
+        ];
+
+        if (grantedSkillId) {
+          victoryLogs.push({
+            id: crypto.randomUUID(),
+            text: `你获得了新技能【${battleSkills[grantedSkillId].label}】。`,
+          });
+        }
+
         return {
           hero: {
             ...nextHero,
             block: 0,
           },
           enemy: nextEnemy,
-          battleLog: [
-            ...nextLogs,
-            { id: crypto.randomUUID(), text: `${state.enemy.name} 被击败，获得 ${reward.gold} 金币。` },
-          ],
+          battleLog: victoryLogs,
           battleSummary: nextSummary,
           battleCooldowns: nextCooldowns,
           pendingReward: {
@@ -382,6 +422,9 @@ export const useGameStore = create<GameState>((set) => ({
           attack: state.hero.stats.attack + appliedReward.attackBoost,
         },
       };
+      const nextUnlockedBattleSkills = appliedReward.grantedSkillId
+        ? unlockBattleSkill(state.unlockedBattleSkills, appliedReward.grantedSkillId)
+        : state.unlockedBattleSkills;
       const remainingNodes = getNextPlayableNodes(nextMap);
 
       return {
@@ -392,6 +435,7 @@ export const useGameStore = create<GameState>((set) => ({
         battleSummary: null,
         currentView: remainingNodes.length === 0 ? 'town' : 'map',
         enemy: cloneEnemy(),
+        unlockedBattleSkills: nextUnlockedBattleSkills,
         battleCooldowns: cloneBattleCooldowns(),
         battleSkillRuntimeState: cloneBattleSkillRuntimeState(),
         battleLog: [{ id: crypto.randomUUID(), text: '你整理好状态，准备继续前进。' }],

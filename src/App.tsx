@@ -13,6 +13,7 @@ function App() {
   const currentView = useGameStore((state) => state.currentView);
   const hero = useGameStore((state) => state.hero);
   const battlePriority = useGameStore((state) => state.battlePriority);
+  const unlockedBattleSkills = useGameStore((state) => state.unlockedBattleSkills);
   const battleCooldowns = useGameStore((state) => state.battleCooldowns);
   const battleSkillRuntimeState = useGameStore((state) => state.battleSkillRuntimeState);
   const reorderBattlePriority = useGameStore((state) => state.reorderBattlePriority);
@@ -39,6 +40,7 @@ function App() {
             title="冒险者面板"
             character={hero}
             battlePriority={battlePriority}
+            availableSkillIds={unlockedBattleSkills}
             battleCooldowns={battleCooldowns}
             battleSkillsMap={effectiveSkillsMap}
             onDragStateChange={setIsReordering}

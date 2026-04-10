@@ -1,4 +1,9 @@
-import type { BattleReward, MapNodeData, RewardChoice } from '../types';
+import { battleSkills, mockBattleSkillDropPool } from './skills';
+import type { BattleReward, BattleSkillId, MapNodeData, RewardChoice } from '../types';
+
+interface BuildRewardOptions {
+  grantedSkillId?: BattleSkillId;
+}
 
 function buildChoice(
   id: string,
@@ -14,7 +19,32 @@ function buildChoice(
   };
 }
 
-export function buildReward(node: MapNodeData): BattleReward {
+export function rollBattleSkillDrop(
+  node: MapNodeData,
+  unlockedSkillIds: BattleSkillId[],
+  clearedBattleCount: number,
+): BattleSkillId | undefined {
+  const remainingSkills = mockBattleSkillDropPool.filter((skillId) => !unlockedSkillIds.includes(skillId));
+  if (remainingSkills.length === 0) {
+    return undefined;
+  }
+
+  if (node.kind !== 'battle' && node.kind !== 'elite' && node.kind !== 'boss') {
+    return undefined;
+  }
+
+  const guaranteedDrop = node.kind === 'elite' || node.kind === 'boss' || clearedBattleCount < 3;
+  const randomDrop = Math.random() < 0.45;
+
+  if (!guaranteedDrop && !randomDrop) {
+    return undefined;
+  }
+
+  const randomIndex = Math.floor(Math.random() * remainingSkills.length);
+  return remainingSkills[randomIndex];
+}
+
+export function buildReward(node: MapNodeData, options: BuildRewardOptions = {}): BattleReward {
   if (node.kind === 'treasure') {
     return {
       outcome: 'victory',
@@ -69,21 +99,23 @@ export function buildReward(node: MapNodeData): BattleReward {
     };
   }
 
+  const skillText = options.grantedSkillId ? ` 你还缴获了技能【${battleSkills[options.grantedSkillId].label}】。` : '';
+
   return {
     outcome: 'victory',
     nodeId: node.id,
     kind: node.kind,
     title: node.kind === 'elite' ? '精英胜利' : node.kind === 'boss' ? 'Boss 胜利' : '战斗胜利',
     description:
-      node.kind === 'elite'
+      (node.kind === 'elite'
         ? '强敌已被击溃，你缴获了更多战利品。'
         : node.kind === 'boss'
           ? '守关者倒下了，你夺回了遗迹深处的宝藏。'
-          : '你拿下了当前房间。',
+          : '你拿下了当前房间。') + skillText,
     gold: node.kind === 'elite' ? 12 : node.kind === 'boss' ? 20 : 5,
     maxHpBoost: 0,
     attackBoost: 0,
     heal: 0,
+    grantedSkillId: options.grantedSkillId,
   };
 }
-

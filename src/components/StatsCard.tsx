@@ -12,6 +12,7 @@ interface StatsCardProps {
   title: string;
   character: Character;
   battlePriority?: BattleSkillId[];
+  availableSkillIds?: BattleSkillId[];
   battleCooldowns?: BattleCooldownState;
   battleSkillsMap?: Record<BattleSkillId, BattleSkillDefinition>;
   onReorderBattlePriority?: (fromSkillId: BattleSkillId, toSkillId: BattleSkillId) => void;
@@ -24,6 +25,7 @@ export function StatsCard({
   title,
   character,
   battlePriority = [],
+  availableSkillIds,
   battleCooldowns,
   battleSkillsMap,
   onReorderBattlePriority,
@@ -36,7 +38,10 @@ export function StatsCard({
   const canEditPriority = battlePriority.length > 0 && battleCooldowns && onReorderBattlePriority;
   const canManageSkills = battleCooldowns && onEnableBattleSkill && onDisableBattleSkill && onReorderBattlePriority;
   const effectiveSkillsMap = battleSkillsMap ?? battleSkills;
-  const allSkillIds = useMemo(() => Object.keys(effectiveSkillsMap) as BattleSkillId[], [effectiveSkillsMap]);
+  const allSkillIds = useMemo(
+    () => availableSkillIds ?? (Object.keys(effectiveSkillsMap) as BattleSkillId[]),
+    [availableSkillIds, effectiveSkillsMap],
+  );
 
   return (
     <Panel>

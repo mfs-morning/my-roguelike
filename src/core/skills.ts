@@ -15,6 +15,48 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
       blockGain: 0,
     },
   },
+  attackPlus2: {
+    id: 'attackPlus2',
+    label: '普攻 2',
+    description: '比普攻更凶狠的一击，没有冷却。',
+    classId: 'warrior',
+    tags: ['warrior', 'strike'],
+    cooldown: 0,
+    template: 'attack',
+    numbers: {
+      damageMultiplier: 1,
+      bonusDamage: 1,
+      blockGain: 0,
+    },
+  },
+  attackPlus3: {
+    id: 'attackPlus3',
+    label: '普攻 3',
+    description: '更成熟的基础剑技，没有冷却。',
+    classId: 'warrior',
+    tags: ['warrior', 'strike'],
+    cooldown: 0,
+    template: 'attack',
+    numbers: {
+      damageMultiplier: 1,
+      bonusDamage: 2,
+      blockGain: 0,
+    },
+  },
+  attackPlus4: {
+    id: 'attackPlus4',
+    label: '普攻 4',
+    description: '经过打磨的强力平A，没有冷却。',
+    classId: 'warrior',
+    tags: ['warrior', 'strike'],
+    cooldown: 0,
+    template: 'attack',
+    numbers: {
+      damageMultiplier: 1,
+      bonusDamage: 3,
+      blockGain: 0,
+    },
+  },
   heavyStrike: {
     id: 'heavyStrike',
     label: '重击',
@@ -60,4 +102,6 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   },
 };
 
-export const defaultBattlePriority: BattleSkillId[] = ['heavyStrike', 'rend', 'guard', 'attack'];
+export const defaultBattlePriority: BattleSkillId[] = ['heavyStrike', 'guard', 'attack'];
+export const defaultUnlockedBattleSkills: BattleSkillId[] = ['attack', 'heavyStrike', 'guard'];
+export const mockBattleSkillDropPool: BattleSkillId[] = ['rend', 'attackPlus2', 'attackPlus3', 'attackPlus4'];

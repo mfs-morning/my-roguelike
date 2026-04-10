@@ -1,5 +1,5 @@
 import type { BattleCooldownState, Character, Enemy } from '../types';
-import { battleSkills, defaultBattlePriority } from './skills';
+import { battleSkills, defaultBattlePriority, defaultUnlockedBattleSkills } from './skills';
 
 // 默认开局主角数据。
 export const starterHero: Character = {
@@ -35,11 +35,14 @@ export const starterEnemy: Enemy = {
   },
 };
 
-export { battleSkills, defaultBattlePriority };
+export { battleSkills, defaultBattlePriority, defaultUnlockedBattleSkills };
 
 export function createBattleCooldownState(): BattleCooldownState {
   return {
     attack: 0,
+    attackPlus2: 0,
+    attackPlus3: 0,
+    attackPlus4: 0,
     heavyStrike: 0,
     guard: 0,
     rend: 0,

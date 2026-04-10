@@ -1,3 +1,4 @@
+import { battleSkills } from '../core/skills';
 import { BattleLog } from '../components/BattleLog';
 import { Button } from '../components/ui/Button';
 import { Panel } from '../components/ui/Panel';
@@ -28,6 +29,7 @@ export function RewardView() {
 
   const isVictory = pendingReward.outcome === 'victory';
   const showBattleLog = !nonBattleRewardKinds.has(pendingReward.kind);
+  const grantedSkill = pendingReward.grantedSkillId ? battleSkills[pendingReward.grantedSkillId] : null;
 
   return (
     <section className="grid gap-5">
@@ -46,8 +48,17 @@ export function RewardView() {
           {pendingReward.maxHpBoost > 0 ? <StatusBadge tone="bright">生命上限 +{pendingReward.maxHpBoost}</StatusBadge> : null}
           {pendingReward.attackBoost > 0 ? <StatusBadge tone="bright">攻击 +{pendingReward.attackBoost}</StatusBadge> : null}
           {pendingReward.heal > 0 ? <StatusBadge tone="bright">回复 +{pendingReward.heal}</StatusBadge> : null}
+          {grantedSkill ? <StatusBadge tone="bright">新技能：{grantedSkill.label}</StatusBadge> : null}
           <StatusBadge>已清理 {clearedCount}/{generatedMap.nodes.length}</StatusBadge>
         </div>
+
+        {grantedSkill ? (
+          <div className="rounded-2xl border border-[rgba(96,165,250,0.2)] bg-[rgba(96,165,250,0.08)] px-4 py-3 text-sm leading-6 text-[var(--color-text-main)]">
+            <strong className="block text-xs uppercase tracking-[0.18em] text-sky-200">技能掉落</strong>
+            <div className="mt-2 font-bold text-[var(--color-text-main)]">{grantedSkill.label}</div>
+            <p className="mt-1 mb-0 text-[var(--color-text-muted)]">{grantedSkill.description}</p>
+          </div>
+        ) : null}
 
         {pendingReward.battleSummary ? (
           <div className="rounded-2xl border border-[rgba(240,193,91,0.18)] bg-[rgba(240,193,91,0.08)] px-4 py-3 text-sm leading-6 text-[var(--color-text-main)]">
