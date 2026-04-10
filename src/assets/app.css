@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #090909;
+  --color-ember: #15110f;
+  --color-panel: rgba(20, 15, 13, 0.85);
+  --color-border-soft: rgba(242, 230, 201, 0.14);
+  --color-text-main: #f2e6c9;
+  --color-text-muted: #d8c9a4;
+  --color-accent: #c38a33;
+  --color-accent-bright: #f0c15b;
+  --color-accent-deep: #d78f1f;
+  --font-display: "Consolas", "Courier New", monospace;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background:
+      radial-gradient(circle at top, rgba(220, 170, 80, 0.14), transparent 35%),
+      linear-gradient(180deg, #15110f 0%, #090909 100%);
+    color: var(--color-text-main);
+    font-family: var(--font-display);
+  }
+
+  button {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-[20px] border px-5 py-5 shadow-[0_18px_50px_rgba(0,0,0,0.25)];
+    border-color: var(--color-border-soft);
+    background: var(--color-panel);
+  }
+
+  .eyebrow {
+    @apply m-0 text-[0.78rem] uppercase tracking-[0.18em];
+    color: var(--color-accent);
+  }
+
+  .button-primary {
+    @apply cursor-pointer rounded-full px-5 py-3 font-bold text-[#1b1208] transition-opacity disabled:cursor-not-allowed disabled:opacity-45;
+    background: linear-gradient(135deg, var(--color-accent-deep), var(--color-accent-bright));
+  }
+
+  .button-secondary {
+    @apply cursor-pointer rounded-full px-5 py-3 font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-45;
+    background: rgba(242, 230, 201, 0.08);
+    color: var(--color-text-main);
+    outline: 1px solid rgba(242, 230, 201, 0.16);
+  }
+
+  .scrollbar-ember {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(240, 193, 91, 0.45) transparent;
+  }
+}
