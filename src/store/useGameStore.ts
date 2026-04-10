@@ -326,7 +326,9 @@ export const useGameStore = create<GameState>((set) => ({
       if (enemyDefeated) {
         const clearedBattleCount = state.generatedMap.nodes.filter((node) => node.kind === 'battle' && node.cleared).length;
         const grantedSkillId = rollBattleSkillDrop(currentNode, state.unlockedBattleSkills, clearedBattleCount);
-        const reward = buildReward(currentNode, { grantedSkillId });
+        const reward = grantedSkillId
+          ? buildReward(currentNode, { grantedSkillId })
+          : buildReward(currentNode);
         const victoryLogs = [
           ...nextLogs,
           { id: crypto.randomUUID(), text: `${state.enemy.name} 被击败，获得 ${reward.gold} 金币。` },
