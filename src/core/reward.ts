@@ -100,9 +100,8 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
   }
 
   const skillText = options.grantedSkillId ? ` 你还缴获了技能【${battleSkills[options.grantedSkillId].label}】。` : '';
-
-  return {
-    outcome: 'victory',
+  const battleRewardBase = {
+    outcome: 'victory' as const,
     nodeId: node.id,
     kind: node.kind,
     title: node.kind === 'elite' ? '精英胜利' : node.kind === 'boss' ? 'Boss 胜利' : '战斗胜利',
@@ -116,6 +115,12 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
     maxHpBoost: 0,
     attackBoost: 0,
     heal: 0,
-    grantedSkillId: options.grantedSkillId,
   };
+
+  return options.grantedSkillId
+    ? {
+        ...battleRewardBase,
+        grantedSkillId: options.grantedSkillId,
+      }
+    : battleRewardBase;
 }
