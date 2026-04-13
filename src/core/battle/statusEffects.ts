@@ -1,4 +1,5 @@
-import type { BattleSkillExtraEffect, BattleStatusEffect, Character, Enemy } from '../types';
+// 处理流血、中毒等状态效果的施加、叠加与回合开始结算。
+import type { BattleSkillExtraEffect, BattleStatusEffect, Character, Enemy } from '../../types';
 
 interface ApplyStatusPayload {
   hero: Character;

@@ -1,3 +1,4 @@
+// 战术槽排序、条件判定与技能自动选择相关的战斗决策逻辑。
 import { getEffectiveSkill } from './effectiveSkills';
 import type {
   BattleCooldownState,
@@ -7,7 +8,7 @@ import type {
   BattleTacticSlot,
   Character,
   Enemy,
-} from '../types';
+} from '../../types';
 
 function getHpPercent(currentHp: number, maxHp: number) {
   if (maxHp <= 0) {

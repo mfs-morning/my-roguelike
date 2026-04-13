@@ -1,5 +1,6 @@
-import { battleSkills, mockBattleSkillDropPool } from './skills';
-import type { BattleReward, BattleSkillId, MapNodeData, RewardChoice } from '../types';
+// 处理战斗奖励、技能掉落候选与各类房间奖励内容生成。
+import { battleSkills, mockBattleSkillDropPool } from '../skills/skills';
+import type { BattleReward, BattleSkillId, MapNodeData, RewardChoice } from '../../types';
 
 export const INITIAL_SKILL_DROP_CHANCE = 0.15;
 export const SKILL_DROP_CHANCE_STEP = 0.1;

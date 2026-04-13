@@ -5,7 +5,7 @@ import { BattleView } from './views/BattleView';
 import { MapView } from './views/MapView';
 import { TownView } from './views/TownView';
 import { SectionTitle } from './components/ui/SectionTitle';
-import { getEffectiveSkillMap } from './core/effectiveSkills';
+import { getEffectiveSkillMap } from './core/battle/effectiveSkills';
 import { useGameStore } from './store/useGameStore';
 
 function App() {

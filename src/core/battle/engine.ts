@@ -1,7 +1,8 @@
-import { skillTemplates } from './skillTemplates';
+// 负责结算完整战斗回合，包括技能效果、持续伤害、格挡与胜负结果。
+import { skillTemplates } from '../skills/skillTemplates';
 import { getEffectiveSkill } from './effectiveSkills';
 import { applySkillStatusEffects, resolveStartOfTurnStatusEffects } from './statusEffects';
-import type { BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy } from '../types';
+import type { BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy } from '../../types';
 
 // 计算本次攻击的基础伤害，至少造成 1 点。
 function getBaseDamage(strength: number, agility: number) {

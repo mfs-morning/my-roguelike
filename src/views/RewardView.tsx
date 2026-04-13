@@ -1,4 +1,4 @@
-import { battleSkills } from '../core/skills';
+import { battleSkills } from '../core/skills/skills';
 import type { BattleSkillTag, CharacterClassId } from '../types';
 import { BattleLog } from '../components/BattleLog';
 import { Button } from '../components/ui/Button';

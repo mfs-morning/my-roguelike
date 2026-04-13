@@ -1,4 +1,5 @@
-import type { GeneratedMap, MapNodeData } from '../types';
+// 维护地图推进进度，计算已清理节点与当前可进入的后续节点。
+import type { GeneratedMap, MapNodeData } from '../../types';
 
 export function markNodeCleared(map: GeneratedMap, nodeId: string) {
   return {

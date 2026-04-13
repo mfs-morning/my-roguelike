@@ -10,7 +10,7 @@ import type {
   BattleTacticSlot,
   Character,
 } from '../types';
-import { battleSkills } from '../core/constants';
+import { battleSkills } from '../core/config/constants';
 import { HealthBar } from './ui/HealthBar';
 import { Panel } from './ui/Panel';
 import { StatusBadge } from './ui/StatusBadge';

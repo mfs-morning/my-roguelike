@@ -1,5 +1,6 @@
-import { battleSkills, getSkillDescription } from './skills';
-import type { BattleSkillDefinition, BattleSkillId, BattleSkillRuntimeState, CharacterStats } from '../types';
+// 根据基础技能与局内修正，生成当前战斗中真正生效的技能数据。
+import { battleSkills, getSkillDescription } from '../skills/skills';
+import type { BattleSkillDefinition, BattleSkillId, BattleSkillRuntimeState, CharacterStats } from '../../types';
 
 // 基于静态技能模板与局内修正，计算当前这局真正生效的技能数值。
 export function getEffectiveSkill(

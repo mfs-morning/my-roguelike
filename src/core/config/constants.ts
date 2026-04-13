@@ -1,5 +1,6 @@
-import type { BattleCooldownState, Character, Enemy, BattleTacticSlot } from '../types';
-import { battleSkills, defaultBattleTactics, defaultUnlockedBattleSkills } from './skills';
+// 集中定义开局角色、敌人模板与默认技能配置等全局常量。
+import type { BattleCooldownState, Character, Enemy, BattleTacticSlot } from '../../types';
+import { battleSkills, defaultBattleTactics, defaultUnlockedBattleSkills } from '../skills/skills';
 
 // 默认开局主角数据。
 export const starterHero: Character = {

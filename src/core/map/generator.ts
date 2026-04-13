@@ -1,4 +1,5 @@
-import type { GeneratedMap, MapEdge, MapNodeData, RoomKind } from '../types';
+// 生成分层地图骨架、路径连接与各层房间类型分布。
+import type { GeneratedMap, MapEdge, MapNodeData, RoomKind } from '../../types';
 
 interface MapSkeletonOptions {
   width?: number;

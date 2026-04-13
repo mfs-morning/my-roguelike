@@ -1,3 +1,4 @@
+// 定义静态技能数据、默认战术槽以及界面展示用的技能说明文本。
 import type {
   BattleSkillDefinition,
   BattleSkillExtraEffect,
@@ -5,7 +6,7 @@ import type {
   BattleTacticConditionKind,
   BattleTacticSlot,
   CharacterStats,
-} from '../types';
+} from '../../types';
 
 function formatDamageFormula(multiplier = 1, bonusDamage = 0) {
   const parts = [`${Math.round(multiplier * 100)}%力量`];

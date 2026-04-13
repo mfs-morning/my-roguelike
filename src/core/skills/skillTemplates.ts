@@ -1,9 +1,10 @@
+// 提供可复用的技能模板实现，按模板类型生成基础技能效果。
 import type {
   BattleSkillDefinition,
   BattleSkillEffectContext,
   BattleSkillEffectResult,
   BattleSkillTemplateId,
-} from '../types';
+} from '../../types';
 
 // 普通进攻模板：根据倍率和附加值计算英雄伤害。
 function attackTemplate(
