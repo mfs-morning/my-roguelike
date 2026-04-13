@@ -2,7 +2,7 @@ import { battleSkills } from '../core/skills';
 import { create } from 'zustand';
 import {
   createBattleCooldownState,
-  defaultBattlePriority,
+  defaultBattleTactics,
   defaultUnlockedBattleSkills,
   starterEnemy,
   starterHero,
@@ -26,6 +26,8 @@ import type {
   BattleSkillModifier,
   BattleSkillRuntimeState,
   BattleSummary,
+  BattleTacticCondition,
+  BattleTacticSlot,
   Character,
   Enemy,
   GeneratedMap,
@@ -41,7 +43,7 @@ interface GameState {
   activeRoomId: string | null;
   pendingReward: BattleReward | null;
   battleSummary: BattleSummary | null;
-  battlePriority: BattleSkillId[];
+  battleTactics: BattleTacticSlot[];
   unlockedBattleSkills: BattleSkillId[];
   battleSkillDropChance: number;
   battleCooldowns: BattleCooldownState;
@@ -51,6 +53,7 @@ interface GameState {
   selectRoom: (roomId: string) => void;
   moveBattlePriority: (skillId: BattleSkillId, direction: 'up' | 'down') => void;
   reorderBattlePriority: (fromSkillId: BattleSkillId, toSkillId: BattleSkillId) => void;
+  setBattleTacticCondition: (skillId: BattleSkillId, condition: BattleTacticCondition) => void;
   enableBattleSkill: (skillId: BattleSkillId) => void;
   disableBattleSkill: (skillId: BattleSkillId) => void;
   upgradeBattleSkill: (skillId: BattleSkillId, modifier: BattleSkillModifier) => void;
@@ -68,9 +71,9 @@ function cloneEnemy() {
   return structuredClone(starterEnemy) as Enemy;
 }
 
-// 复制默认技能优先级，保证每局运行独立。
-function cloneBattlePriority() {
-  return [...defaultBattlePriority] as BattleSkillId[];
+// 复制默认战术槽顺序，保证每局运行独立。
+function cloneBattleTactics() {
+  return structuredClone(defaultBattleTactics) as BattleTacticSlot[];
 }
 
 // 复制默认已解锁技能列表。
@@ -88,18 +91,32 @@ function cloneBattleSkillRuntimeState() {
   return {} as BattleSkillRuntimeState;
 }
 
-// 从优先级队列中移除指定技能，但不负责最少保留数量校验。
-function disableSkillFromPriority(priority: BattleSkillId[], skillId: BattleSkillId) {
-  return priority.filter((id) => id !== skillId);
+// 从战术槽中移除指定技能，但不负责最少保留数量校验。
+function disableSkillFromPriority(tactics: BattleTacticSlot[], skillId: BattleSkillId) {
+  return tactics.filter((slot) => slot.skillId !== skillId);
 }
 
-// 将新技能加入优先级队列末尾，已存在则保持不变。
-function enableSkillToPriority(priority: BattleSkillId[], skillId: BattleSkillId) {
-  if (priority.includes(skillId)) {
-    return priority;
+// 将新技能加入战术槽末尾，已存在则保持不变。
+function enableSkillToPriority(tactics: BattleTacticSlot[], skillId: BattleSkillId): BattleTacticSlot[] {
+  if (tactics.some((slot) => slot.skillId === skillId)) {
+    return tactics;
   }
 
-  return [...priority, skillId];
+  return [...tactics, { skillId, condition: normalizeTacticCondition(skillId, { kind: 'always' }) }];
+}
+
+function updateTacticCondition(
+  tactics: BattleTacticSlot[],
+  skillId: BattleSkillId,
+  condition: BattleTacticCondition,
+) {
+  const nextCondition = normalizeTacticCondition(skillId, condition);
+  return tactics.map((slot) => (slot.skillId === skillId ? { ...slot, condition: nextCondition } : slot));
+}
+
+function normalizeTacticCondition(skillId: BattleSkillId, condition: BattleTacticCondition): BattleTacticCondition {
+  const availableConditions = battleSkills[skillId].availableConditions;
+  return availableConditions.includes(condition.kind) ? condition : { kind: 'always' };
 }
 
 // 将新技能加入解锁池，保持唯一性。
@@ -185,7 +202,7 @@ function buildInitialState() {
     activeRoomId: null,
     pendingReward: null,
     battleSummary: null,
-    battlePriority: cloneBattlePriority(),
+    battleTactics: cloneBattleTactics(),
     unlockedBattleSkills: cloneUnlockedBattleSkills(),
     battleSkillDropChance: INITIAL_SKILL_DROP_CHANCE,
     battleCooldowns: cloneBattleCooldowns(),
@@ -201,11 +218,15 @@ export const useGameStore = create<GameState>((set) => ({
   resetRun: () => set(buildInitialState()),
   moveBattlePriority: (skillId, direction) =>
     set((state) => ({
-      battlePriority: moveSkill(state.battlePriority, skillId, direction),
+      battleTactics: moveSkill(state.battleTactics, skillId, direction),
     })),
   reorderBattlePriority: (fromSkillId, toSkillId) =>
     set((state) => ({
-      battlePriority: reorderSkills(state.battlePriority, fromSkillId, toSkillId),
+      battleTactics: reorderSkills(state.battleTactics, fromSkillId, toSkillId),
+    })),
+  setBattleTacticCondition: (skillId, condition) =>
+    set((state) => ({
+      battleTactics: updateTacticCondition(state.battleTactics, skillId, condition),
     })),
   enableBattleSkill: (skillId) =>
     set((state) => {
@@ -214,17 +235,17 @@ export const useGameStore = create<GameState>((set) => ({
       }
 
       return {
-        battlePriority: enableSkillToPriority(state.battlePriority, skillId),
+        battleTactics: enableSkillToPriority(state.battleTactics, skillId),
       };
     }),
   disableBattleSkill: (skillId) =>
     set((state) => {
-      if (state.battlePriority.length <= 1 || !state.battlePriority.includes(skillId)) {
+      if (state.battleTactics.length <= 1 || !state.battleTactics.some((slot) => slot.skillId === skillId)) {
         return state;
       }
 
       return {
-        battlePriority: disableSkillFromPriority(state.battlePriority, skillId),
+        battleTactics: disableSkillFromPriority(state.battleTactics, skillId),
       };
     }),
   // 为指定技能叠加局内强化，不改动基础模板定义。
@@ -283,7 +304,7 @@ export const useGameStore = create<GameState>((set) => ({
         return state;
       }
 
-      const usedSkillId = pickHeroSkill(state.battlePriority, state.battleCooldowns);
+      const usedSkillId = pickHeroSkill(state.battleTactics, state.battleCooldowns, state.hero, state.enemy);
       const result = simulateBattleRound(state.hero, state.enemy, usedSkillId, state.battleSkillRuntimeState);
       const heroDefeated = result.heroRemainingHp <= 0;
       const enemyDefeated = result.enemyRemainingHp <= 0;
@@ -454,6 +475,9 @@ export const useGameStore = create<GameState>((set) => ({
         battleSummary: null,
         currentView: remainingNodes.length === 0 ? 'town' : 'map',
         enemy: cloneEnemy(),
+        battleTactics: appliedReward.grantedSkillId
+          ? enableSkillToPriority(state.battleTactics, appliedReward.grantedSkillId)
+          : state.battleTactics,
         unlockedBattleSkills: nextUnlockedBattleSkills,
         battleCooldowns: cloneBattleCooldowns(),
         battleSkillRuntimeState: cloneBattleSkillRuntimeState(),

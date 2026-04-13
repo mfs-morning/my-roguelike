@@ -1,19 +1,29 @@
 import { useEffect, useState } from 'react';
-import type { BattleSkillDefinition, BattleSkillExtraEffect, BattleSkillId } from '../types';
+import type {
+  BattleSkillDefinition,
+  BattleSkillExtraEffect,
+  BattleSkillId,
+  BattleTacticCondition,
+  BattleTacticConditionKind,
+  BattleTacticSlot,
+} from '../types';
 import { Button } from './ui/Button';
 
 interface SkillManagerModalProps {
   isOpen: boolean;
-  priority: BattleSkillId[];
+  priority: BattleTacticSlot[];
   availableSkills: BattleSkillId[];
   skillsMap: Record<BattleSkillId, BattleSkillDefinition>;
   onClose: () => void;
+  onSetCondition: (skillId: BattleSkillId, condition: BattleTacticCondition) => void;
   onEnableSkill: (skillId: BattleSkillId) => void;
   onDisableSkill: (skillId: BattleSkillId) => void;
   onReorderSkill: (fromSkillId: BattleSkillId, toSkillId: BattleSkillId) => void;
 }
 
 type SkillBucket = 'active' | 'inactive';
+
+type TacticConditionPreset = BattleTacticConditionKind;
 
 function formatExtraEffect(effect: BattleSkillExtraEffect) {
   const kindLabel = effect.kind === 'poison' ? '中毒' : '流血';
@@ -22,12 +32,53 @@ function formatExtraEffect(effect: BattleSkillExtraEffect) {
   return `${targetLabel}附加${kindLabel} ${effect.value} 点${durationText}`;
 }
 
+function getConditionLabel(condition: BattleTacticCondition) {
+  if (condition.kind === 'always') {
+    return '始终释放';
+  }
+
+  if (condition.kind === 'enemy_hp_below_percent') {
+    return `敌方生命 < ${condition.value}%`;
+  }
+
+  return `自身生命 < ${condition.value}%`;
+}
+
+function getConditionPreset(condition: BattleTacticCondition): TacticConditionPreset {
+  return condition.kind;
+}
+
+function createConditionFromPreset(preset: TacticConditionPreset): BattleTacticCondition {
+  if (preset === 'enemy_hp_below_percent') {
+    return { kind: 'enemy_hp_below_percent', value: 30 };
+  }
+
+  if (preset === 'hero_hp_below_percent') {
+    return { kind: 'hero_hp_below_percent', value: 50 };
+  }
+
+  return { kind: 'always' };
+}
+
+function getConditionOptionLabel(kind: TacticConditionPreset) {
+  if (kind === 'enemy_hp_below_percent') {
+    return '敌方生命 < 30%';
+  }
+
+  if (kind === 'hero_hp_below_percent') {
+    return '自身生命 < 50%';
+  }
+
+  return '始终释放';
+}
+
 export function SkillManagerModal({
   isOpen,
   priority,
   availableSkills,
   skillsMap,
   onClose,
+  onSetCondition,
   onEnableSkill,
   onDisableSkill,
   onReorderSkill,
@@ -65,7 +116,8 @@ export function SkillManagerModal({
     return null;
   }
 
-  const inactiveSkills = availableSkills.filter((skillId) => !priority.includes(skillId));
+  const activeSkillIds = priority.map((slot) => slot.skillId);
+  const inactiveSkills = availableSkills.filter((skillId) => !activeSkillIds.includes(skillId));
 
   const resetDragState = () => {
     setDraggingSkillId(null);
@@ -76,21 +128,24 @@ export function SkillManagerModal({
 
   const moveSkill = (skillId: BattleSkillId, target: SkillBucket) => {
     if (target === 'active') {
-      if (!priority.includes(skillId)) {
+      if (!activeSkillIds.includes(skillId)) {
         onEnableSkill(skillId);
       }
       return;
     }
 
-    if (priority.includes(skillId) && priority.length > 1) {
+    if (activeSkillIds.includes(skillId) && priority.length > 1) {
       onDisableSkill(skillId);
     }
   };
 
-  const renderSkillCard = (skillId: BattleSkillId, source: SkillBucket, index?: number) => {
+  const renderSkillCard = (slotOrSkillId: BattleTacticSlot | BattleSkillId, source: SkillBucket, index?: number) => {
+    const slot = typeof slotOrSkillId === 'string' ? null : slotOrSkillId;
+    const skillId = typeof slotOrSkillId === 'string' ? slotOrSkillId : slotOrSkillId.skillId;
     const skill = skillsMap[skillId];
     const extraEffectText = skill.numbers.extraEffects?.map(formatExtraEffect).join('；');
     const isDragging = draggingSkillId === skillId;
+    const availableConditions = skill.availableConditions;
     const target = source === 'active' ? 'inactive' : 'active';
     const arrow = source === 'active' ? '→' : '←';
     const actionDisabled = source === 'active' && priority.length <= 1;
@@ -135,7 +190,7 @@ export function SkillManagerModal({
         ].join(' ')}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               {typeof index === 'number' ? (
                 <span className="rounded-full border border-[rgba(242,230,201,0.12)] bg-[rgba(242,230,201,0.04)] px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-[var(--color-text-muted)]">
@@ -146,6 +201,26 @@ export function SkillManagerModal({
             </div>
             <p className="mt-2 text-xs leading-5 text-[var(--color-text-muted)]">{skill.description}</p>
             {extraEffectText ? <p className="mt-1 text-xs leading-5 text-[var(--color-accent-bright)]">{extraEffectText}</p> : null}
+            {slot ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold tracking-[0.08em] text-[var(--color-text-muted)]">触发条件</span>
+                <select
+                  value={getConditionPreset(slot.condition)}
+                  onChange={(event) => {
+                    onSetCondition(skillId, createConditionFromPreset(event.target.value as TacticConditionPreset));
+                  }}
+                  onClick={(event) => event.stopPropagation()}
+                  className="rounded-xl border border-[rgba(240,193,91,0.22)] bg-[rgba(20,16,14,0.9)] px-3 py-1.5 text-xs text-[var(--color-text-main)] outline-none"
+                >
+                  {availableConditions.map((conditionKind) => (
+                    <option key={conditionKind} value={conditionKind}>
+                      {getConditionOptionLabel(conditionKind)}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-[var(--color-accent-bright)]">{getConditionLabel(slot.condition)}</span>
+              </div>
+            ) : null}
           </div>
           <Button
             variant="secondary"
@@ -187,9 +262,9 @@ export function SkillManagerModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-[rgba(242,230,201,0.1)] pb-4">
           <div>
-            <p className="m-0 text-xs uppercase tracking-[0.22em] text-[var(--color-accent-bright)]">Skill Loadout</p>
-            <h3 className="mt-2 text-xl font-bold tracking-[0.08em] text-[var(--color-text-main)]">技能编组管理</h3>
-            <p className="mt-2 text-sm text-[var(--color-text-muted)]">拖动卡片或点击箭头，在左右列表之间切换技能。</p>
+            <p className="m-0 text-xs uppercase tracking-[0.22em] text-[var(--color-accent-bright)]">Tactical Loadout</p>
+            <h3 className="mt-2 text-xl font-bold tracking-[0.08em] text-[var(--color-text-main)]">战术槽管理</h3>
+            <p className="mt-2 text-sm text-[var(--color-text-muted)]">拖动调整释放顺序，并给启用中的技能设置触发条件。</p>
           </div>
           <Button variant="secondary" className="px-3 py-2 text-sm" onClick={onClose}>
             关闭
@@ -221,8 +296,8 @@ export function SkillManagerModal({
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h4 className="m-0 text-sm font-bold tracking-[0.08em] text-[var(--color-text-main)]">已启用技能</h4>
-                <p className="mt-1 text-xs text-[var(--color-text-muted)]">这些技能会出现在优先级队列中。</p>
+                <h4 className="m-0 text-sm font-bold tracking-[0.08em] text-[var(--color-text-main)]">已启用战术槽</h4>
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">这些技能会按顺序检查条件并自动释放。</p>
               </div>
               <span className="rounded-full border border-[rgba(240,193,91,0.24)] bg-[rgba(240,193,91,0.12)] px-2.5 py-1 text-[10px] font-bold tracking-[0.08em] text-[var(--color-accent-bright)]">
                 {priority.length}
@@ -230,7 +305,7 @@ export function SkillManagerModal({
             </div>
 
             <div className="mt-4 grid gap-3">
-              {priority.map((skillId, index) => renderSkillCard(skillId, 'active', index))}
+              {priority.map((slot, index) => renderSkillCard(slot, 'active', index))}
             </div>
           </section>
 

@@ -91,6 +91,7 @@ export interface BattleSkillDefinition {
   description: string;
   classId: CharacterClassId;
   tags: BattleSkillTag[];
+  availableConditions: BattleTacticConditionKind[];
   cooldown: number;
   template: BattleSkillTemplateId;
   numbers: BattleSkillNumbers;
@@ -112,6 +113,18 @@ export interface BattleRoundResult {
 }
 
 export type BattleCooldownState = Record<BattleSkillId, number>;
+
+export type BattleTacticConditionKind = 'always' | 'enemy_hp_below_percent' | 'hero_hp_below_percent';
+
+export type BattleTacticCondition =
+  | { kind: 'always' }
+  | { kind: 'enemy_hp_below_percent'; value: number }
+  | { kind: 'hero_hp_below_percent'; value: number };
+
+export interface BattleTacticSlot {
+  skillId: BattleSkillId;
+  condition: BattleTacticCondition;
+}
 
 // 兼容当前玩法流程的线性房间结构。
 export interface Room {

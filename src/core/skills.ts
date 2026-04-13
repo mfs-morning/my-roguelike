@@ -1,4 +1,11 @@
-import type { BattleSkillDefinition, BattleSkillExtraEffect, BattleSkillId, CharacterStats } from '../types';
+import type {
+  BattleSkillDefinition,
+  BattleSkillExtraEffect,
+  BattleSkillId,
+  BattleTacticConditionKind,
+  BattleTacticSlot,
+  CharacterStats,
+} from '../types';
 
 function formatDamageFormula(multiplier = 1, bonusDamage = 0) {
   const parts = [`${Math.round(multiplier * 100)}%力量`];
@@ -79,12 +86,15 @@ function createSkillDefinition(definition: Omit<BattleSkillDefinition, 'descript
   };
 }
 
+const defaultTacticConditions: BattleTacticConditionKind[] = ['always', 'enemy_hp_below_percent', 'hero_hp_below_percent'];
+
 export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   attack: createSkillDefinition({
     id: 'attack',
     label: '普攻',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
+    availableConditions: ['always'],
     cooldown: 0,
     template: 'attack',
     numbers: {
@@ -98,6 +108,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     label: '普攻 2',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
+    availableConditions: ['always'],
     cooldown: 0,
     template: 'attack',
     numbers: {
@@ -111,6 +122,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     label: '普攻 3',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
+    availableConditions: ['always'],
     cooldown: 0,
     template: 'attack',
     numbers: {
@@ -124,6 +136,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     label: '普攻 4',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
+    availableConditions: ['always'],
     cooldown: 0,
     template: 'attack',
     numbers: {
@@ -137,6 +150,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     label: '重击',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
+    availableConditions: defaultTacticConditions,
     cooldown: 2,
     template: 'attack',
     numbers: {
@@ -150,6 +164,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     label: '撕裂',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed'],
+    availableConditions: ['always', 'enemy_hp_below_percent'],
     cooldown: 2,
     template: 'attack',
     numbers: {
@@ -164,6 +179,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     label: '格挡',
     classId: 'warrior',
     tags: ['warrior', 'block'],
+    availableConditions: ['always', 'hero_hp_below_percent'],
     cooldown: 2,
     template: 'gainBlock',
     numbers: {
@@ -174,6 +190,10 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   }),
 };
 
-export const defaultBattlePriority: BattleSkillId[] = ['heavyStrike', 'guard', 'attack'];
+export const defaultBattleTactics: BattleTacticSlot[] = [
+  { skillId: 'heavyStrike', condition: { kind: 'always' } },
+  { skillId: 'guard', condition: { kind: 'always' } },
+  { skillId: 'attack', condition: { kind: 'always' } },
+];
 export const defaultUnlockedBattleSkills: BattleSkillId[] = ['attack', 'heavyStrike', 'guard'];
 export const mockBattleSkillDropPool: BattleSkillId[] = ['rend', 'attackPlus2', 'attackPlus3', 'attackPlus4'];

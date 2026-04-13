@@ -1,4 +1,5 @@
 import { battleSkills } from '../core/skills';
+import type { BattleSkillTag, CharacterClassId } from '../types';
 import { BattleLog } from '../components/BattleLog';
 import { Button } from '../components/ui/Button';
 import { Panel } from '../components/ui/Panel';
@@ -7,6 +8,22 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { useGameStore } from '../store/useGameStore';
 
 const nonBattleRewardKinds = new Set(['treasure', 'blessing', 'rest', 'event']);
+
+const classLabelMap: Record<CharacterClassId, string> = {
+  warrior: '战士',
+  rogue: '游荡者',
+  mage: '法师',
+};
+
+const tagLabelMap: Record<BattleSkillTag, string> = {
+  warrior: '战士',
+  rogue: '游荡者',
+  mage: '法师',
+  bleed: '流血',
+  poison: '中毒',
+  block: '格挡',
+  strike: '打击',
+};
 
 export function RewardView() {
   const pendingReward = useGameStore((state) => state.pendingReward);
@@ -94,10 +111,10 @@ export function RewardView() {
                       <p className="mt-3 mb-0 text-sm leading-6 text-[var(--color-text-muted)]">{choice.description}</p>
                       {skill ? (
                         <div className="mt-4 flex flex-wrap gap-2">
-                          <StatusBadge>{skill.classId}</StatusBadge>
+                          <StatusBadge>{classLabelMap[skill.classId]}</StatusBadge>
                           {skill.tags.map((tag) => (
                             <StatusBadge key={`${choice.id}-${tag}`} tone="bright">
-                              {tag}
+                              {tagLabelMap[tag]}
                             </StatusBadge>
                           ))}
                         </div>

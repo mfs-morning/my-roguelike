@@ -1,42 +1,82 @@
 import { getEffectiveSkill } from './effectiveSkills';
-import type { BattleCooldownState, BattleSkillId, BattleSkillRuntimeState } from '../types';
+import type {
+  BattleCooldownState,
+  BattleSkillId,
+  BattleSkillRuntimeState,
+  BattleTacticCondition,
+  BattleTacticSlot,
+  Character,
+  Enemy,
+} from '../types';
 
-export function moveSkill(priority: BattleSkillId[], skillId: BattleSkillId, direction: 'up' | 'down') {
-  const index = priority.indexOf(skillId);
+function getHpPercent(currentHp: number, maxHp: number) {
+  if (maxHp <= 0) {
+    return 0;
+  }
+
+  return (currentHp / maxHp) * 100;
+}
+
+export function doesTacticConditionMatch(
+  condition: BattleTacticCondition,
+  hero: Character,
+  enemy: Enemy,
+) {
+  if (condition.kind === 'always') {
+    return true;
+  }
+
+  if (condition.kind === 'enemy_hp_below_percent') {
+    return getHpPercent(enemy.stats.hp, enemy.stats.maxHp) < condition.value;
+  }
+
+  return getHpPercent(hero.stats.hp, hero.stats.maxHp) < condition.value;
+}
+
+export function moveSkill(tactics: BattleTacticSlot[], skillId: BattleSkillId, direction: 'up' | 'down') {
+  const index = tactics.findIndex((slot) => slot.skillId === skillId);
   if (index < 0) {
-    return priority;
+    return tactics;
   }
 
   const targetIndex = direction === 'up' ? index - 1 : index + 1;
-  if (targetIndex < 0 || targetIndex >= priority.length) {
-    return priority;
+  if (targetIndex < 0 || targetIndex >= tactics.length) {
+    return tactics;
   }
 
-  const next = [...priority];
+  const next = [...tactics];
   [next[index], next[targetIndex]] = [next[targetIndex]!, next[index]!];
   return next;
 }
 
-export function reorderSkills(priority: BattleSkillId[], fromSkillId: BattleSkillId, toSkillId: BattleSkillId) {
-  const fromIndex = priority.indexOf(fromSkillId);
-  const toIndex = priority.indexOf(toSkillId);
+export function reorderSkills(tactics: BattleTacticSlot[], fromSkillId: BattleSkillId, toSkillId: BattleSkillId) {
+  const fromIndex = tactics.findIndex((slot) => slot.skillId === fromSkillId);
+  const toIndex = tactics.findIndex((slot) => slot.skillId === toSkillId);
 
   if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
-    return priority;
+    return tactics;
   }
 
-  const next = [...priority];
+  const next = [...tactics];
   const [movedSkill] = next.splice(fromIndex, 1);
   if (!movedSkill) {
-    return priority;
+    return tactics;
   }
 
   next.splice(toIndex, 0, movedSkill);
   return next;
 }
 
-export function pickHeroSkill(priority: BattleSkillId[], cooldowns: BattleCooldownState) {
-  return priority.find((skillId) => cooldowns[skillId] === 0) ?? 'attack';
+export function pickHeroSkill(
+  tactics: BattleTacticSlot[],
+  cooldowns: BattleCooldownState,
+  hero: Character,
+  enemy: Enemy,
+) {
+  return (
+    tactics.find((slot) => cooldowns[slot.skillId] === 0 && doesTacticConditionMatch(slot.condition, hero, enemy))?.skillId ??
+    'attack'
+  );
 }
 
 // 根据当前局内技能配置更新冷却，支持升级后冷却减少等效果。
@@ -52,4 +92,3 @@ export function updateCooldowns(
   next[usedSkillId] = getEffectiveSkill(usedSkillId, runtimeState).cooldown;
   return next;
 }
-

@@ -2,7 +2,14 @@ import { useMemo, useState } from 'react';
 import { BattlePriorityList } from './BattlePriorityList';
 import { SkillManagerButton } from './SkillManagerButton';
 import { SkillManagerModal } from './SkillManagerModal';
-import type { BattleCooldownState, BattleSkillDefinition, BattleSkillId, Character } from '../types';
+import type {
+  BattleCooldownState,
+  BattleSkillDefinition,
+  BattleSkillId,
+  BattleTacticCondition,
+  BattleTacticSlot,
+  Character,
+} from '../types';
 import { battleSkills } from '../core/constants';
 import { HealthBar } from './ui/HealthBar';
 import { Panel } from './ui/Panel';
@@ -11,11 +18,12 @@ import { StatusBadge } from './ui/StatusBadge';
 interface StatsCardProps {
   title: string;
   character: Character;
-  battlePriority?: BattleSkillId[];
+  battleTactics?: BattleTacticSlot[];
   availableSkillIds?: BattleSkillId[];
   battleCooldowns?: BattleCooldownState;
   battleSkillsMap?: Record<BattleSkillId, BattleSkillDefinition>;
   onReorderBattlePriority?: (fromSkillId: BattleSkillId, toSkillId: BattleSkillId) => void;
+  onSetBattleTacticCondition?: (skillId: BattleSkillId, condition: BattleTacticCondition) => void;
   onEnableBattleSkill?: (skillId: BattleSkillId) => void;
   onDisableBattleSkill?: (skillId: BattleSkillId) => void;
   onDragStateChange?: (isDragging: boolean) => void;
@@ -24,19 +32,20 @@ interface StatsCardProps {
 export function StatsCard({
   title,
   character,
-  battlePriority = [],
+  battleTactics = [],
   availableSkillIds,
   battleCooldowns,
   battleSkillsMap,
   onReorderBattlePriority,
+  onSetBattleTacticCondition,
   onEnableBattleSkill,
   onDisableBattleSkill,
   onDragStateChange,
 }: StatsCardProps) {
   const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
   const { stats } = character;
-  const canEditPriority = battlePriority.length > 0 && battleCooldowns && onReorderBattlePriority;
-  const canManageSkills = battleCooldowns && onEnableBattleSkill && onDisableBattleSkill && onReorderBattlePriority;
+  const canEditPriority = battleTactics.length > 0 && battleCooldowns && onReorderBattlePriority;
+  const canManageSkills = battleCooldowns && onEnableBattleSkill && onDisableBattleSkill && onReorderBattlePriority && onSetBattleTacticCondition;
   const effectiveSkillsMap = battleSkillsMap ?? battleSkills;
   const allSkillIds = useMemo(
     () => availableSkillIds ?? (Object.keys(effectiveSkillsMap) as BattleSkillId[]),
@@ -80,7 +89,7 @@ export function StatsCard({
 
         {canManageSkills ? (
           <SkillManagerButton
-            activeCount={battlePriority.length}
+            activeCount={battleTactics.length}
             totalCount={allSkillIds.length}
             onClick={() => setIsSkillModalOpen(true)}
           />
@@ -88,7 +97,7 @@ export function StatsCard({
 
         {canEditPriority ? (
           <BattlePriorityList
-            priority={battlePriority}
+            priority={battleTactics}
             cooldowns={battleCooldowns}
             skillsMap={effectiveSkillsMap}
             onReorder={onReorderBattlePriority}
@@ -99,10 +108,11 @@ export function StatsCard({
         {canManageSkills ? (
           <SkillManagerModal
             isOpen={isSkillModalOpen}
-            priority={battlePriority}
+            priority={battleTactics}
             availableSkills={allSkillIds}
             skillsMap={effectiveSkillsMap}
             onClose={() => setIsSkillModalOpen(false)}
+            onSetCondition={onSetBattleTacticCondition}
             onEnableSkill={onEnableBattleSkill}
             onDisableSkill={onDisableBattleSkill}
             onReorderSkill={onReorderBattlePriority}

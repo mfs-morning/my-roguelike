@@ -1,14 +1,26 @@
 import { useState } from 'react';
-import type { BattleCooldownState, BattleSkillDefinition, BattleSkillId } from '../types';
+import type { BattleCooldownState, BattleSkillDefinition, BattleSkillId, BattleTacticSlot } from '../types';
 import { BattleSkillCard } from './BattleSkillCard';
 import { StatusBadge } from './ui/StatusBadge';
 
 interface BattlePriorityListProps {
-  priority: BattleSkillId[];
+  priority: BattleTacticSlot[];
   cooldowns: BattleCooldownState;
   skillsMap: Record<BattleSkillId, BattleSkillDefinition>;
   onReorder: (fromSkillId: BattleSkillId, toSkillId: BattleSkillId) => void;
   onDragStateChange?: (isDragging: boolean) => void;
+}
+
+function getConditionLabel(slot: BattleTacticSlot) {
+  if (slot.condition.kind === 'always') {
+    return '始终释放';
+  }
+
+  if (slot.condition.kind === 'enemy_hp_below_percent') {
+    return `敌方生命 < ${slot.condition.value}%`;
+  }
+
+  return `自身生命 < ${slot.condition.value}%`;
 }
 
 export function BattlePriorityList({ priority, cooldowns, skillsMap, onReorder, onDragStateChange }: BattlePriorityListProps) {
@@ -18,28 +30,29 @@ export function BattlePriorityList({ priority, cooldowns, skillsMap, onReorder, 
   return (
     <div className="rounded-2xl border border-[rgba(242,230,201,0.1)] bg-[rgba(242,230,201,0.03)] p-4">
       <div className="flex items-center justify-between gap-3 border-b border-[rgba(242,230,201,0.12)] pb-3">
-        <h3 className="m-0 text-lg font-bold tracking-[0.08em] text-[var(--color-text-main)]">技能优先级</h3>
+        <h3 className="m-0 text-lg font-bold tracking-[0.08em] text-[var(--color-text-main)]">战术槽顺序</h3>
         <StatusBadge>Auto Queue</StatusBadge>
       </div>
 
       <div className="mt-4 grid gap-3">
-        {priority.map((skillId, index) => (
+        {priority.map((slot) => (
           <div
-            key={skillId}
-            className={hoverSkillId === skillId && draggingSkillId !== skillId ? 'rounded-2xl ring-1 ring-[rgba(240,193,91,0.35)]' : ''}
+            key={slot.skillId}
+            className={hoverSkillId === slot.skillId && draggingSkillId !== slot.skillId ? 'rounded-2xl ring-1 ring-[rgba(240,193,91,0.35)]' : ''}
           >
             <BattleSkillCard
-              skill={skillsMap[skillId]}
-              cooldown={cooldowns[skillId]}
-              isDragging={draggingSkillId === skillId}
+              skill={skillsMap[slot.skillId]}
+              cooldown={cooldowns[slot.skillId]}
+              footerText={getConditionLabel(slot)}
+              isDragging={draggingSkillId === slot.skillId}
               onDragStart={() => {
-                setDraggingSkillId(skillId);
+                setDraggingSkillId(slot.skillId);
                 onDragStateChange?.(true);
               }}
-              onDragOver={() => setHoverSkillId(skillId)}
+              onDragOver={() => setHoverSkillId(slot.skillId)}
               onDrop={() => {
-                if (draggingSkillId && draggingSkillId !== skillId) {
-                  onReorder(draggingSkillId, skillId);
+                if (draggingSkillId && draggingSkillId !== slot.skillId) {
+                  onReorder(draggingSkillId, slot.skillId);
                 }
                 setDraggingSkillId(null);
                 setHoverSkillId(null);
@@ -57,4 +70,3 @@ export function BattlePriorityList({ priority, cooldowns, skillsMap, onReorder, 
     </div>
   );
 }
-
