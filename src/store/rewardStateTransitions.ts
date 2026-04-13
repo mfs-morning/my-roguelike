@@ -1,7 +1,7 @@
 // 处理奖励领取、地图推进、技能解锁与战后状态重置。
 import { getNextPlayableNodes, markNodeCleared } from '../core/map/mapProgress';
 import { INITIAL_SKILL_DROP_CHANCE } from '../core/progression/reward';
-import type { BattleReward, Character, GeneratedMap } from '../types';
+import type { Character } from '../types';
 import type { ClaimRewardState, RewardClaimPatch } from './types';
 import { enableSkillToPriority, unlockBattleSkill } from './battleTacticsState';
 import { buildInitialState, cloneBattleCooldowns, cloneBattleSkillRuntimeState, cloneEnemy } from './gameStateFactory';
@@ -55,6 +55,7 @@ export function resolveRewardClaimState(state: ClaimRewardState, choiceId?: stri
     battleSummary: null,
     currentView: remainingNodes.length === 0 ? 'town' : 'map',
     enemy: cloneEnemy(),
+    backEnemy: null,
     battleTactics: appliedReward.grantedSkillId
       ? enableSkillToPriority(state.battleTactics, appliedReward.grantedSkillId)
       : state.battleTactics,
@@ -64,4 +65,3 @@ export function resolveRewardClaimState(state: ClaimRewardState, choiceId?: stri
     battleLog: [{ id: crypto.randomUUID(), text: '你整理好状态，准备继续前进。' }],
   };
 }
-

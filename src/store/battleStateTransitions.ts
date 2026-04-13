@@ -38,7 +38,11 @@ export function buildRestReward(nodeId: string): BattleReward {
 }
 
 // 根据房间类型生成敌人，并在基础模板上叠加精英或首领数值。
-export function buildEnemyForRoom(roomId: string, roomKind: GeneratedMap['nodes'][number]['kind']) {
+export function buildEnemyForRoom(
+  roomId: string,
+  roomKind: GeneratedMap['nodes'][number]['kind'],
+  position: 'front' | 'back' = 'front',
+) {
   const enemy = cloneEnemy();
   const profile = roomKind === 'boss'
     ? enemyTacticsProfiles.boss
@@ -52,10 +56,10 @@ export function buildEnemyForRoom(roomId: string, roomKind: GeneratedMap['nodes'
   enemy.name = roomKind === 'boss'
     ? '遗迹看守者'
     : profile === enemyTacticsProfiles.spider
-      ? '毒蛛'
+      ? position === 'back' ? '后排毒蛛' : '毒蛛'
       : profile === enemyTacticsProfiles.guard
-        ? '持盾守卫'
-        : starterEnemy.name;
+        ? position === 'back' ? '后排守卫' : '持盾守卫'
+        : position === 'back' ? '后排史莱姆' : starterEnemy.name;
   enemy.rewardGold = roomKind === 'boss' ? 20 : roomKind === 'elite' ? 12 : starterEnemy.rewardGold;
   enemy.tacticsProfile = structuredClone(profile);
   enemy.enemyCooldowns = createEnemyCooldownState(profile.tactics.map((slot) => slot.skillId));
@@ -71,6 +75,14 @@ export function buildEnemyForRoom(roomId: string, roomKind: GeneratedMap['nodes'
     strength: roomKind === 'boss' ? 8 : roomKind === 'elite' ? 6 : profile === enemyTacticsProfiles.guard ? 5 : profile === enemyTacticsProfiles.spider ? 4 : starterEnemy.stats.strength,
     agility: roomKind === 'elite' ? 2 : profile === enemyTacticsProfiles.spider ? 1 : starterEnemy.stats.agility,
   };
+  if (position === 'back') {
+    enemy.stats = {
+      ...enemy.stats,
+      hp: Math.max(10, enemy.stats.hp - 4),
+      maxHp: Math.max(10, enemy.stats.maxHp - 4),
+      strength: Math.max(3, enemy.stats.strength - 1),
+    };
+  }
   enemy.block = 0;
   enemy.statusEffects = [];
   return enemy;
@@ -84,7 +96,8 @@ export function createBattleEntryState(state: SelectRoomState, roomId: string, r
       block: 0,
       statusEffects: [],
     },
-    enemy: buildEnemyForRoom(room.id, room.kind),
+    enemy: buildEnemyForRoom(room.id, room.kind, 'front'),
+    backEnemy: room.kind === 'boss' || room.kind === 'elite' ? buildEnemyForRoom(`${room.id}-back`, 'battle', 'back') : null,
     battleSummary: createEmptyBattleSummary(),
     battleLog: [{ id: crypto.randomUUID(), text: `${room.label} 的敌人出现了。` }],
     currentView: 'battle' as ViewName,
@@ -108,10 +121,11 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
     return null;
   }
 
-  const usedSkillId = pickHeroSkill(state.battleTactics, state.battleCooldowns, state.hero, state.enemy);
-  const result = simulateBattleRound(state.hero, state.enemy, usedSkillId, state.battleSkillRuntimeState);
+  const targetEnemy = state.enemy.stats.hp > 0 ? state.enemy : state.backEnemy ?? state.enemy;
+  const usedSkillId = pickHeroSkill(state.battleTactics, state.battleCooldowns, state.hero, targetEnemy);
+  const result = simulateBattleRound(state.hero, state.enemy, state.backEnemy, usedSkillId, state.battleSkillRuntimeState);
   const heroDefeated = result.heroRemainingHp <= 0;
-  const enemyDefeated = result.enemyRemainingHp <= 0;
+  const enemyDefeated = !result.nextEnemy && !result.nextBackEnemy;
   const nextCooldowns = updateCooldowns(state.battleCooldowns, usedSkillId, state.battleSkillRuntimeState);
 
   const nextHero: Character = {
@@ -121,16 +135,6 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
     stats: {
       ...state.hero.stats,
       hp: result.heroRemainingHp,
-    },
-  };
-  const nextEnemy: Enemy = {
-    ...state.enemy,
-    block: result.enemyRemainingBlock,
-    statusEffects: result.enemyStatusEffects,
-    enemyCooldowns: result.nextEnemyCooldowns,
-    stats: {
-      ...state.enemy.stats,
-      hp: result.enemyRemainingHp,
     },
   };
   const nextLogs: BattleLogEntry[] = [
@@ -150,7 +154,8 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
   if (!heroDefeated && !enemyDefeated) {
     return {
       hero: nextHero,
-      enemy: nextEnemy,
+      enemy: result.nextEnemy ?? state.enemy,
+      backEnemy: result.nextBackEnemy,
       battleSummary: nextSummary,
       battleLog: nextLogs,
       battleCooldowns: nextCooldowns,
@@ -168,7 +173,7 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
     const reward = grantedSkillChoices.length > 0 ? buildReward(currentNode, { grantedSkillChoices }) : buildReward(currentNode);
     const victoryLogs = [
       ...nextLogs,
-      { id: crypto.randomUUID(), text: `${state.enemy.name} 被击败，获得 ${reward.gold} 金币。` },
+      { id: crypto.randomUUID(), text: `遭遇敌群已被击败，获得 ${reward.gold} 金币。` },
     ];
 
     if (reward.choices?.some((choice) => choice.grantedSkillId)) {
@@ -183,7 +188,8 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
         ...nextHero,
         block: 0,
       },
-      enemy: nextEnemy,
+      enemy: result.nextEnemy ?? state.enemy,
+      backEnemy: result.nextBackEnemy,
       battleLog: victoryLogs,
       battleSummary: nextSummary,
       battleCooldowns: nextCooldowns,
@@ -203,7 +209,8 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
       ...nextHero,
       block: 0,
     },
-    enemy: nextEnemy,
+    enemy: result.nextEnemy ?? state.enemy,
+    backEnemy: result.nextBackEnemy,
     battleLog: [
       ...nextLogs,
       { id: crypto.randomUUID(), text: `${state.hero.name} 倒下了，本轮冒险结束。` },

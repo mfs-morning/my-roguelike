@@ -63,6 +63,7 @@ export interface GameBaseState {
   currentView: ViewName;
   hero: Character;
   enemy: Enemy;
+  backEnemy: Enemy | null;
   battleLog: BattleLogEntry[];
   activeRoomId: string | null;
   pendingReward: null;
@@ -80,6 +81,7 @@ export function buildInitialState(initialSkillDropChance: number): GameBaseState
     currentView: 'town' as ViewName,
     hero: cloneHero(),
     enemy: cloneEnemy(),
+    backEnemy: null,
     generatedMap: generateMapSkeleton(),
     battleLog: [{ id: 'log-1', text: '新的冒险开始了。' }],
     activeRoomId: null,

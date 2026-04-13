@@ -3,7 +3,7 @@ import { skillTemplates } from '../skills/skillTemplates';
 import { pickEnemySkill, updateEnemyCooldowns } from './battlePriority';
 import { getEffectiveEnemySkill, getEffectiveSkill } from './effectiveSkills';
 import { applySkillStatusEffects, resolveStartOfTurnStatusEffects } from './statusEffects';
-import type { BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy } from '../../types';
+import type { BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy, EnemySkillId } from '../../types';
 
 // 计算本次攻击的基础伤害，至少造成 1 点。
 function getBaseDamage(strength: number, agility: number) {
@@ -22,7 +22,7 @@ function applyDamage(currentHp: number, currentBlock: number, incomingDamage: nu
   };
 }
 
-function resolveEnemySkill(hero: Character, enemy: Enemy, enemySkillId: NonNullable<BattleRoundResult['enemySkillId']>) {
+function resolveEnemySkill(hero: Character, enemy: Enemy, enemySkillId: EnemySkillId) {
   const enemySkill = getEffectiveEnemySkill(enemySkillId, enemy.enemySkillRuntimeState, enemy.stats);
   const baseEnemyDamage = getBaseDamage(enemy.stats.strength, hero.stats.agility);
   const effect = skillTemplates[enemySkill.template](
@@ -89,10 +89,46 @@ function resolveEnemySkill(hero: Character, enemy: Enemy, enemySkillId: NonNulla
   };
 }
 
+function resolveSingleEnemyTurn(hero: Character, enemy: Enemy) {
+  const enemySkillId = pickEnemySkill(enemy.tacticsProfile.tactics, enemy.enemyCooldowns, hero, enemy);
+  const actionResult = enemySkillId
+    ? resolveEnemySkill(hero, enemy, enemySkillId)
+    : {
+        nextHero: hero,
+        nextEnemy: enemy,
+        enemyDamageTaken: 0,
+        logs: [] as string[],
+      };
+
+  return {
+    enemySkillId,
+    nextHero: actionResult.nextHero,
+    nextEnemy: {
+      ...actionResult.nextEnemy,
+      enemyCooldowns: updateEnemyCooldowns(enemy.enemyCooldowns, enemySkillId, enemy.enemySkillRuntimeState),
+    },
+    damageTaken: actionResult.enemyDamageTaken,
+    logs: actionResult.logs,
+  };
+}
+
+function collapseFormation(frontEnemy: Enemy | null, backEnemy: Enemy | null) {
+  if (frontEnemy && frontEnemy.stats.hp > 0) {
+    return { frontEnemy, backEnemy: backEnemy && backEnemy.stats.hp > 0 ? backEnemy : null, promoted: false };
+  }
+
+  if (backEnemy && backEnemy.stats.hp > 0) {
+    return { frontEnemy: backEnemy, backEnemy: null, promoted: true };
+  }
+
+  return { frontEnemy: null, backEnemy: null, promoted: false };
+}
+
 // 根据当前编排自动选择英雄动作，再结算一轮互相攻击与 DOT。
 export function simulateBattleRound(
   hero: Character,
   enemy: Enemy,
+  backEnemy: Enemy | null,
   heroSkillId: BattleSkillId,
   runtimeState: BattleSkillRuntimeState = {},
 ): BattleRoundResult {
@@ -111,17 +147,17 @@ export function simulateBattleRound(
 
     return {
       heroSkillId,
-      enemySkillId: null,
+      enemySkillIds: [],
       nextEnemyCooldowns: enemy.enemyCooldowns,
+      nextBackEnemyCooldowns: backEnemy?.enemyCooldowns ?? null,
       heroDamage: 0,
       enemyDamage: 0,
       heroBlockGain: 0,
+      nextEnemy: enemy,
+      nextBackEnemy: backEnemy,
       heroRemainingHp: heroStatusResult.remainingHp,
-      enemyRemainingHp: enemy.stats.hp,
       heroRemainingBlock: heroStatusResult.remainingBlock,
-      enemyRemainingBlock: enemy.block,
       heroStatusEffects: heroStatusResult.statusEffects,
-      enemyStatusEffects: enemy.statusEffects,
       actionSummary: '未能行动',
       logTexts: logs,
     };
@@ -164,75 +200,113 @@ export function simulateBattleRound(
     effects: (effect.extraEffects ?? []).filter((extraEffect) => extraEffect.target === 'hero' || enemyAfterHeroHit.remainingHp > 0),
   });
 
-  const heroStatusAfterSkill = effectApplication.heroStatusEffects;
-  const enemyStatusAfterSkill = effectApplication.enemyStatusEffects;
-
   logs.push(...effectApplication.logs);
 
-  const enemyStatusResult = resolveStartOfTurnStatusEffects({
+  const frontStatusResult = resolveStartOfTurnStatusEffects({
     actorName: enemy.name,
-    statusEffects: enemyStatusAfterSkill,
+    statusEffects: effectApplication.enemyStatusEffects,
     currentHp: enemyAfterHeroHit.remainingHp,
     currentBlock: enemyAfterHeroHit.remainingBlock,
   });
-  logs.push(...enemyStatusResult.logs);
+  logs.push(...frontStatusResult.logs);
 
-  const enemyCanAct = enemyStatusResult.remainingHp > 0;
-  const heroWithBlock: Character = {
-    ...heroAfterStatus,
-    block: heroAfterStatus.block + effect.heroBlockGain,
-    statusEffects: heroStatusAfterSkill,
-  };
-  const enemyReady: Enemy = {
+  let nextFrontEnemy: Enemy | null = {
     ...enemy,
-    block: enemyStatusResult.remainingBlock,
-    statusEffects: enemyStatusResult.statusEffects,
+    block: frontStatusResult.remainingBlock,
+    statusEffects: frontStatusResult.statusEffects,
     stats: {
       ...enemy.stats,
-      hp: enemyStatusResult.remainingHp,
+      hp: frontStatusResult.remainingHp,
     },
   };
-  const enemySkillId = enemyCanAct
-    ? pickEnemySkill(enemy.tacticsProfile.tactics, enemy.enemyCooldowns, heroWithBlock, enemyReady)
-    : null;
-  const enemyActionResult = enemyCanAct && enemySkillId
-    ? resolveEnemySkill(heroWithBlock, enemyReady, enemySkillId)
-    : {
-        nextHero: heroWithBlock,
-        nextEnemy: enemyReady,
-        enemyDamageTaken: 0,
-        logs: [] as string[],
-      };
-  const nextEnemyCooldowns = updateEnemyCooldowns(enemy.enemyCooldowns, enemySkillId, enemy.enemySkillRuntimeState);
 
-  logs.unshift(
-    enemyActionResult.enemyDamageTaken > 0
-      ? `${hero.name} ${effect.summary}，造成 ${effect.heroDamage} 点伤害，承受 ${enemyActionResult.enemyDamageTaken} 点伤害。`
-      : `${hero.name} ${effect.summary}，造成 ${effect.heroDamage} 点伤害。`,
-  );
-  logs.push(...enemyActionResult.logs);
-
-  if (effect.heroBlockGain > 0 || enemyActionResult.nextHero.block > 0) {
-    logs.push(`${hero.name} 当前剩余 ${enemyActionResult.nextHero.block} 点格挡。`);
+  let nextBackEnemy: Enemy | null = backEnemy;
+  if (backEnemy) {
+    const backStatusResult = resolveStartOfTurnStatusEffects({
+      actorName: backEnemy.name,
+      statusEffects: backEnemy.statusEffects,
+      currentHp: backEnemy.stats.hp,
+      currentBlock: backEnemy.block,
+    });
+    logs.push(...backStatusResult.logs);
+    nextBackEnemy = {
+      ...backEnemy,
+      block: backStatusResult.remainingBlock,
+      statusEffects: backStatusResult.statusEffects,
+      stats: {
+        ...backEnemy.stats,
+        hp: backStatusResult.remainingHp,
+      },
+    };
   }
 
-  if (!enemyCanAct && enemyStatusResult.remainingHp <= 0 && enemyAfterHeroHit.remainingHp > 0) {
-    logs.push(`${enemy.name} 因持续伤害倒下。`);
+  const collapsedAfterHero = collapseFormation(nextFrontEnemy, nextBackEnemy);
+  nextFrontEnemy = collapsedAfterHero.frontEnemy;
+  nextBackEnemy = collapsedAfterHero.backEnemy;
+  if (collapsedAfterHero.promoted && nextFrontEnemy) {
+    logs.push(`${nextFrontEnemy.name} 从后排前移，顶上了前线。`);
+  }
+
+  let heroAfterEnemyTurns: Character = {
+    ...heroAfterStatus,
+    block: heroAfterStatus.block + effect.heroBlockGain,
+    statusEffects: effectApplication.heroStatusEffects,
+  };
+  let totalEnemyDamage = 0;
+  const enemySkillIds: EnemySkillId[] = [];
+
+  if (nextFrontEnemy && nextFrontEnemy.stats.hp > 0) {
+    const frontTurn = resolveSingleEnemyTurn(heroAfterEnemyTurns, nextFrontEnemy);
+    heroAfterEnemyTurns = frontTurn.nextHero;
+    nextFrontEnemy = frontTurn.nextEnemy;
+    totalEnemyDamage += frontTurn.damageTaken;
+    if (frontTurn.enemySkillId) {
+      enemySkillIds.push(frontTurn.enemySkillId);
+    }
+    logs.push(...frontTurn.logs);
+  }
+
+  if (nextBackEnemy && nextBackEnemy.stats.hp > 0) {
+    const backTurn = resolveSingleEnemyTurn(heroAfterEnemyTurns, nextBackEnemy);
+    heroAfterEnemyTurns = backTurn.nextHero;
+    nextBackEnemy = backTurn.nextEnemy;
+    totalEnemyDamage += backTurn.damageTaken;
+    if (backTurn.enemySkillId) {
+      enemySkillIds.push(backTurn.enemySkillId);
+    }
+    logs.push(...backTurn.logs);
+  }
+
+  const collapsedAfterEnemyTurns = collapseFormation(nextFrontEnemy, nextBackEnemy);
+  nextFrontEnemy = collapsedAfterEnemyTurns.frontEnemy;
+  nextBackEnemy = collapsedAfterEnemyTurns.backEnemy;
+  if (collapsedAfterEnemyTurns.promoted && nextFrontEnemy) {
+    logs.push(`${nextFrontEnemy.name} 从后排前移，顶上了前线。`);
+  }
+
+  logs.unshift(
+    totalEnemyDamage > 0
+      ? `${hero.name} ${effect.summary}，对前排造成 ${effect.heroDamage} 点伤害，承受 ${totalEnemyDamage} 点伤害。`
+      : `${hero.name} ${effect.summary}，对前排造成 ${effect.heroDamage} 点伤害。`,
+  );
+
+  if (effect.heroBlockGain > 0 || heroAfterEnemyTurns.block > 0) {
+    logs.push(`${hero.name} 当前剩余 ${heroAfterEnemyTurns.block} 点格挡。`);
   }
 
   return {
     heroSkillId,
-    enemySkillId,
-    nextEnemyCooldowns,
+    enemySkillIds,
+    nextEnemyCooldowns: nextFrontEnemy?.enemyCooldowns ?? enemy.enemyCooldowns,
+    nextBackEnemyCooldowns: nextBackEnemy?.enemyCooldowns ?? null,
     heroDamage: effect.heroDamage,
-    enemyDamage: enemyActionResult.enemyDamageTaken,
+    enemyDamage: totalEnemyDamage,
     heroBlockGain: effect.heroBlockGain,
-    heroRemainingHp: enemyActionResult.nextHero.stats.hp,
-    enemyRemainingHp: enemyActionResult.nextEnemy.stats.hp,
-    heroRemainingBlock: enemyActionResult.nextHero.block,
-    enemyRemainingBlock: enemyActionResult.nextEnemy.block,
-    heroStatusEffects: enemyActionResult.nextHero.statusEffects,
-    enemyStatusEffects: enemyActionResult.nextEnemy.statusEffects,
+    nextEnemy: nextFrontEnemy,
+    nextBackEnemy: nextBackEnemy,
+    heroRemainingHp: heroAfterEnemyTurns.stats.hp,
+    heroRemainingBlock: heroAfterEnemyTurns.block,
+    heroStatusEffects: heroAfterEnemyTurns.statusEffects,
     actionSummary: effect.summary,
     logTexts: logs,
   };

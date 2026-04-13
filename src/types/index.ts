@@ -166,17 +166,17 @@ export interface Enemy {
 
 export interface BattleRoundResult {
   heroSkillId: BattleSkillId;
-  enemySkillId: EnemySkillId | null;
+  enemySkillIds: EnemySkillId[];
   nextEnemyCooldowns: EnemyCooldownState;
+  nextBackEnemyCooldowns: EnemyCooldownState | null;
   heroDamage: number;
   enemyDamage: number;
   heroBlockGain: number;
+  nextEnemy: Enemy | null;
+  nextBackEnemy: Enemy | null;
   heroRemainingHp: number;
-  enemyRemainingHp: number;
   heroRemainingBlock: number;
-  enemyRemainingBlock: number;
   heroStatusEffects: BattleStatusEffect[];
-  enemyStatusEffects: BattleStatusEffect[];
   actionSummary: string;
   logTexts: string[];
 }

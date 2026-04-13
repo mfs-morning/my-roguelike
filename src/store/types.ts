@@ -19,6 +19,7 @@ export interface GameState {
   currentView: ViewName;
   hero: Character;
   enemy: Enemy;
+  backEnemy: Enemy | null;
   generatedMap: GeneratedMap;
   battleLog: BattleLogEntry[];
   activeRoomId: string | null;
@@ -44,6 +45,11 @@ export interface GameState {
 
 export type SelectRoomState = Pick<GameState, 'generatedMap' | 'hero'>;
 
+export type ClaimRewardState = Pick<
+  GameState,
+  'pendingReward' | 'generatedMap' | 'hero' | 'unlockedBattleSkills' | 'battleTactics' | 'backEnemy'
+>;
+
 export type BattleRoundState = Pick<
   GameState,
   | 'currentView'
@@ -51,6 +57,7 @@ export type BattleRoundState = Pick<
   | 'pendingReward'
   | 'hero'
   | 'enemy'
+  | 'backEnemy'
   | 'generatedMap'
   | 'battleTactics'
   | 'battleCooldowns'
@@ -66,6 +73,7 @@ export type BattleEntryPatch = Pick<
   | 'activeRoomId'
   | 'hero'
   | 'enemy'
+  | 'backEnemy'
   | 'battleSummary'
   | 'battleLog'
   | 'currentView'
@@ -76,13 +84,14 @@ export type BattleEntryPatch = Pick<
 
 export type BattleOngoingPatch = Pick<
   GameState,
-  'hero' | 'enemy' | 'battleSummary' | 'battleLog' | 'battleCooldowns'
+  'hero' | 'enemy' | 'backEnemy' | 'battleSummary' | 'battleLog' | 'battleCooldowns'
 >;
 
 export type BattleVictoryPatch = Pick<
   GameState,
   | 'hero'
   | 'enemy'
+  | 'backEnemy'
   | 'battleLog'
   | 'battleSummary'
   | 'battleCooldowns'
@@ -93,15 +102,10 @@ export type BattleVictoryPatch = Pick<
 
 export type BattleDefeatPatch = Pick<
   GameState,
-  'hero' | 'enemy' | 'battleLog' | 'battleSummary' | 'battleCooldowns' | 'pendingReward' | 'currentView'
+  'hero' | 'enemy' | 'backEnemy' | 'battleLog' | 'battleSummary' | 'battleCooldowns' | 'pendingReward' | 'currentView'
 >;
 
 export type BattleRoundPatch = BattleOngoingPatch | BattleVictoryPatch | BattleDefeatPatch;
-
-export type ClaimRewardState = Pick<
-  GameState,
-  'pendingReward' | 'generatedMap' | 'hero' | 'unlockedBattleSkills' | 'battleTactics'
->;
 
 export type RewardClaimPatch = Pick<
   GameState,
@@ -112,6 +116,7 @@ export type RewardClaimPatch = Pick<
   | 'battleSummary'
   | 'currentView'
   | 'enemy'
+  | 'backEnemy'
   | 'battleTactics'
   | 'unlockedBattleSkills'
   | 'battleCooldowns'
