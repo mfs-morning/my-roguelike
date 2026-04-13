@@ -1,6 +1,7 @@
 // 负责结算完整战斗回合，包括技能效果、持续伤害、格挡与胜负结果。
 import { skillTemplates } from '../skills/skillTemplates';
-import { getEffectiveSkill } from './effectiveSkills';
+import { pickEnemySkill, updateEnemyCooldowns } from './battlePriority';
+import { getEffectiveEnemySkill, getEffectiveSkill } from './effectiveSkills';
 import { applySkillStatusEffects, resolveStartOfTurnStatusEffects } from './statusEffects';
 import type { BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy } from '../../types';
 
@@ -21,12 +22,71 @@ function applyDamage(currentHp: number, currentBlock: number, incomingDamage: nu
   };
 }
 
-// 统一处理敌方反击伤害修正，方便后续接入减伤或易伤类效果。
-function getModifiedEnemyDamage(baseEnemyDamage: number, effect: ReturnType<(typeof skillTemplates)[keyof typeof skillTemplates]>) {
-  const enemyDamageMultiplier = effect.enemyDamageMultiplier ?? 1;
-  const enemyBonusDamage = effect.enemyBonusDamage ?? 0;
+function resolveEnemySkill(hero: Character, enemy: Enemy, enemySkillId: NonNullable<BattleRoundResult['enemySkillId']>) {
+  const enemySkill = getEffectiveEnemySkill(enemySkillId, enemy.enemySkillRuntimeState, enemy.stats);
+  const baseEnemyDamage = getBaseDamage(enemy.stats.strength, hero.stats.agility);
+  const effect = skillTemplates[enemySkill.template](
+    {
+      hero,
+      enemy,
+      baseHeroDamage: getBaseDamage(hero.stats.strength, enemy.stats.agility),
+      baseEnemyDamage,
+    },
+    {
+      ...enemySkill,
+      id: 'attack',
+      classId: 'warrior',
+      tags: ['warrior', 'strike'],
+      availableConditions: ['always'],
+    },
+  );
 
-  return Math.max(0, Math.floor(baseEnemyDamage * enemyDamageMultiplier) + enemyBonusDamage);
+  const heroAfterEnemyHit = applyDamage(hero.stats.hp, hero.block, effect.heroDamage);
+  const effectApplication = applySkillStatusEffects({
+    hero: {
+      ...hero,
+      block: heroAfterEnemyHit.remainingBlock,
+      stats: {
+        ...hero.stats,
+        hp: heroAfterEnemyHit.remainingHp,
+      },
+    },
+    enemy,
+    effects: effect.extraEffects ?? [],
+  });
+
+  const nextEnemy: Enemy = {
+    ...enemy,
+    block: enemy.block + effect.heroBlockGain,
+    statusEffects: effectApplication.enemyStatusEffects,
+  };
+  const nextHero: Character = {
+    ...hero,
+    block: heroAfterEnemyHit.remainingBlock,
+    statusEffects: effectApplication.heroStatusEffects,
+    stats: {
+      ...hero.stats,
+      hp: heroAfterEnemyHit.remainingHp,
+    },
+  };
+
+  const logs = [
+    effect.heroDamage > 0
+      ? `${enemy.name} 使用${enemySkill.label}，造成 ${heroAfterEnemyHit.damageTaken} 点伤害。`
+      : `${enemy.name} 使用${enemySkill.label}。`,
+    ...effectApplication.logs,
+  ];
+
+  if (effect.heroBlockGain > 0) {
+    logs.push(`${enemy.name} 当前获得 ${effect.heroBlockGain} 点格挡。`);
+  }
+
+  return {
+    nextHero,
+    nextEnemy,
+    enemyDamageTaken: heroAfterEnemyHit.damageTaken,
+    logs,
+  };
 }
 
 // 根据当前编排自动选择英雄动作，再结算一轮互相攻击与 DOT。
@@ -51,6 +111,8 @@ export function simulateBattleRound(
 
     return {
       heroSkillId,
+      enemySkillId: null,
+      nextEnemyCooldowns: enemy.enemyCooldowns,
       heroDamage: 0,
       enemyDamage: 0,
       heroBlockGain: 0,
@@ -116,21 +178,42 @@ export function simulateBattleRound(
   logs.push(...enemyStatusResult.logs);
 
   const enemyCanAct = enemyStatusResult.remainingHp > 0;
-  const enemyDamage = enemyCanAct ? getModifiedEnemyDamage(baseEnemyDamage, effect) : 0;
-  const heroAfterEnemyHit = applyDamage(
-    heroAfterStatus.stats.hp,
-    heroAfterStatus.block + effect.heroBlockGain,
-    enemyDamage,
-  );
+  const heroWithBlock: Character = {
+    ...heroAfterStatus,
+    block: heroAfterStatus.block + effect.heroBlockGain,
+    statusEffects: heroStatusAfterSkill,
+  };
+  const enemyReady: Enemy = {
+    ...enemy,
+    block: enemyStatusResult.remainingBlock,
+    statusEffects: enemyStatusResult.statusEffects,
+    stats: {
+      ...enemy.stats,
+      hp: enemyStatusResult.remainingHp,
+    },
+  };
+  const enemySkillId = enemyCanAct
+    ? pickEnemySkill(enemy.tacticsProfile.tactics, enemy.enemyCooldowns, heroWithBlock, enemyReady)
+    : null;
+  const enemyActionResult = enemyCanAct && enemySkillId
+    ? resolveEnemySkill(heroWithBlock, enemyReady, enemySkillId)
+    : {
+        nextHero: heroWithBlock,
+        nextEnemy: enemyReady,
+        enemyDamageTaken: 0,
+        logs: [] as string[],
+      };
+  const nextEnemyCooldowns = updateEnemyCooldowns(enemy.enemyCooldowns, enemySkillId, enemy.enemySkillRuntimeState);
 
   logs.unshift(
-    enemyDamage > 0
-      ? `${hero.name} ${effect.summary}，造成 ${effect.heroDamage} 点伤害，承受 ${heroAfterEnemyHit.damageTaken} 点伤害。`
+    enemyActionResult.enemyDamageTaken > 0
+      ? `${hero.name} ${effect.summary}，造成 ${effect.heroDamage} 点伤害，承受 ${enemyActionResult.enemyDamageTaken} 点伤害。`
       : `${hero.name} ${effect.summary}，造成 ${effect.heroDamage} 点伤害。`,
   );
+  logs.push(...enemyActionResult.logs);
 
-  if (effect.heroBlockGain > 0) {
-    logs.push(`${hero.name} 当前剩余 ${heroAfterEnemyHit.remainingBlock} 点格挡。`);
+  if (effect.heroBlockGain > 0 || enemyActionResult.nextHero.block > 0) {
+    logs.push(`${hero.name} 当前剩余 ${enemyActionResult.nextHero.block} 点格挡。`);
   }
 
   if (!enemyCanAct && enemyStatusResult.remainingHp <= 0 && enemyAfterHeroHit.remainingHp > 0) {
@@ -139,15 +222,17 @@ export function simulateBattleRound(
 
   return {
     heroSkillId,
+    enemySkillId,
+    nextEnemyCooldowns,
     heroDamage: effect.heroDamage,
-    enemyDamage: heroAfterEnemyHit.damageTaken,
+    enemyDamage: enemyActionResult.enemyDamageTaken,
     heroBlockGain: effect.heroBlockGain,
-    heroRemainingHp: heroAfterEnemyHit.remainingHp,
-    enemyRemainingHp: enemyStatusResult.remainingHp,
-    heroRemainingBlock: heroAfterEnemyHit.remainingBlock,
-    enemyRemainingBlock: enemyStatusResult.remainingBlock,
-    heroStatusEffects: heroStatusAfterSkill,
-    enemyStatusEffects: enemyStatusResult.statusEffects,
+    heroRemainingHp: enemyActionResult.nextHero.stats.hp,
+    enemyRemainingHp: enemyActionResult.nextEnemy.stats.hp,
+    heroRemainingBlock: enemyActionResult.nextHero.block,
+    enemyRemainingBlock: enemyActionResult.nextEnemy.block,
+    heroStatusEffects: enemyActionResult.nextHero.statusEffects,
+    enemyStatusEffects: enemyActionResult.nextEnemy.statusEffects,
     actionSummary: effect.summary,
     logTexts: logs,
   };

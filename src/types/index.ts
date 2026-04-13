@@ -2,6 +2,19 @@ export type ViewName = 'town' | 'map' | 'battle' | 'reward';
 export type BattleOutcome = 'victory' | 'defeat';
 export type RoomKind = 'battle' | 'elite' | 'event' | 'treasure' | 'blessing' | 'boss' | 'rest';
 export type BattleSkillId = 'attack' | 'heavyStrike' | 'guard' | 'rend' | 'attackPlus2' | 'attackPlus3' | 'attackPlus4';
+export type EnemySkillId =
+  | 'oozeSlam'
+  | 'oozeBurst'
+  | 'oozeGuard'
+  | 'shieldUp'
+  | 'shieldBash'
+  | 'shieldAdvance'
+  | 'poisonSpit'
+  | 'bite'
+  | 'frenzyBite'
+  | 'wardenSlash'
+  | 'wardenAdvance'
+  | 'wardenFortify';
 export type CharacterClassId = 'warrior' | 'rogue' | 'mage';
 export type BattleSkillTag = CharacterClassId | 'bleed' | 'poison' | 'block' | 'strike';
 
@@ -31,16 +44,6 @@ export interface Character {
   block: number;
   statusEffects: BattleStatusEffect[];
   stats: CharacterStats;
-}
-
-// 敌人数据，额外包含战斗胜利奖励。
-export interface Enemy {
-  id: string;
-  name: string;
-  block: number;
-  statusEffects: BattleStatusEffect[];
-  stats: CharacterStats;
-  rewardGold: number;
 }
 
 export interface BattleSkillExtraEffect {
@@ -77,6 +80,7 @@ export interface BattleSkillModifier {
 }
 
 export type BattleSkillRuntimeState = Partial<Record<BattleSkillId, BattleSkillModifier>>;
+export type EnemySkillRuntimeState = Partial<Record<EnemySkillId, BattleSkillModifier>>;
 
 export interface BattleSkillNumbers {
   damageMultiplier?: number;
@@ -97,8 +101,73 @@ export interface BattleSkillDefinition {
   numbers: BattleSkillNumbers;
 }
 
+export interface EnemySkillDefinition {
+  id: EnemySkillId;
+  label: string;
+  description: string;
+  cooldown: number;
+  template: BattleSkillTemplateId;
+  numbers: BattleSkillNumbers;
+}
+
+export type BattleCooldownState = Record<BattleSkillId, number>;
+export type EnemyCooldownState = Partial<Record<EnemySkillId, number>>;
+
+export type BattleTacticConditionKind = 'always' | 'enemy_hp_below_percent' | 'hero_hp_below_percent';
+export type EnemyTacticConditionKind =
+  | 'always'
+  | 'hero_hp_below_percent'
+  | 'enemy_hp_below_percent'
+  | 'hero_missing_status'
+  | 'enemy_block_below_value'
+  | 'hero_block_above_value';
+
+export type BattleTacticCondition =
+  | { kind: 'always' }
+  | { kind: 'enemy_hp_below_percent'; value: number }
+  | { kind: 'hero_hp_below_percent'; value: number };
+
+export type EnemyTacticCondition =
+  | { kind: 'always' }
+  | { kind: 'hero_hp_below_percent'; value: number }
+  | { kind: 'enemy_hp_below_percent'; value: number }
+  | { kind: 'hero_missing_status'; statusKind: BattleStatusEffectKind }
+  | { kind: 'enemy_block_below_value'; value: number }
+  | { kind: 'hero_block_above_value'; value: number };
+
+export interface BattleTacticSlot {
+  skillId: BattleSkillId;
+  condition: BattleTacticCondition;
+}
+
+export interface EnemyTacticSlot {
+  skillId: EnemySkillId;
+  condition: EnemyTacticCondition;
+}
+
+export interface EnemyTacticsProfile {
+  label: string;
+  description: string;
+  tactics: EnemyTacticSlot[];
+}
+
+// 敌人数据，额外包含战斗胜利奖励。
+export interface Enemy {
+  id: string;
+  name: string;
+  block: number;
+  statusEffects: BattleStatusEffect[];
+  stats: CharacterStats;
+  rewardGold: number;
+  tacticsProfile: EnemyTacticsProfile;
+  enemyCooldowns: EnemyCooldownState;
+  enemySkillRuntimeState: EnemySkillRuntimeState;
+}
+
 export interface BattleRoundResult {
   heroSkillId: BattleSkillId;
+  enemySkillId: EnemySkillId | null;
+  nextEnemyCooldowns: EnemyCooldownState;
   heroDamage: number;
   enemyDamage: number;
   heroBlockGain: number;
@@ -110,20 +179,6 @@ export interface BattleRoundResult {
   enemyStatusEffects: BattleStatusEffect[];
   actionSummary: string;
   logTexts: string[];
-}
-
-export type BattleCooldownState = Record<BattleSkillId, number>;
-
-export type BattleTacticConditionKind = 'always' | 'enemy_hp_below_percent' | 'hero_hp_below_percent';
-
-export type BattleTacticCondition =
-  | { kind: 'always' }
-  | { kind: 'enemy_hp_below_percent'; value: number }
-  | { kind: 'hero_hp_below_percent'; value: number };
-
-export interface BattleTacticSlot {
-  skillId: BattleSkillId;
-  condition: BattleTacticCondition;
 }
 
 // 兼容当前玩法流程的线性房间结构。

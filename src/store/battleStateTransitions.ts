@@ -1,4 +1,5 @@
 // 管理进入战斗与推进战斗回合时的状态迁移逻辑。
+import { createEnemyCooldownState, enemyTacticsProfiles } from '../core/battle/enemyTactics';
 import { starterEnemy } from '../core/config/constants';
 import { simulateBattleRound } from '../core/battle/engine';
 import {
@@ -19,7 +20,7 @@ import type {
 } from '../types';
 import type { BattleEntryPatch, BattleRoundPatch, BattleRoundState, SelectRoomState } from './types';
 import { cloneBattleCooldowns, cloneBattleSkillRuntimeState, cloneEnemy, createEmptyBattleSummary } from './gameStateFactory';
-import { updateCooldowns, pickHeroSkill } from '../core/battle/battlePriority';
+import { pickHeroSkill, updateCooldowns } from '../core/battle/battlePriority';
 
 // 构建休息房的固定奖励，不进入战斗流程。
 export function buildRestReward(nodeId: string): BattleReward {
@@ -39,15 +40,36 @@ export function buildRestReward(nodeId: string): BattleReward {
 // 根据房间类型生成敌人，并在基础模板上叠加精英或首领数值。
 export function buildEnemyForRoom(roomId: string, roomKind: GeneratedMap['nodes'][number]['kind']) {
   const enemy = cloneEnemy();
+  const profile = roomKind === 'boss'
+    ? enemyTacticsProfiles.boss
+    : roomKind === 'elite'
+      ? enemyTacticsProfiles.guard
+      : Math.random() < 0.5
+        ? enemyTacticsProfiles.slime
+        : enemyTacticsProfiles.spider;
+
   enemy.id = `${roomId}-${enemy.id}`;
-  enemy.name = roomKind === 'boss' ? '遗迹看守者' : roomKind === 'elite' ? '精英看守' : starterEnemy.name;
+  enemy.name = roomKind === 'boss'
+    ? '遗迹看守者'
+    : profile === enemyTacticsProfiles.spider
+      ? '毒蛛'
+      : profile === enemyTacticsProfiles.guard
+        ? '持盾守卫'
+        : starterEnemy.name;
   enemy.rewardGold = roomKind === 'boss' ? 20 : roomKind === 'elite' ? 12 : starterEnemy.rewardGold;
+  enemy.tacticsProfile = structuredClone(profile);
+  enemy.enemyCooldowns = createEnemyCooldownState(profile.tactics.map((slot) => slot.skillId));
+  enemy.enemySkillRuntimeState = roomKind === 'boss'
+    ? { wardenSlash: { bonusDamage: 2 }, wardenAdvance: { blockGainBonus: 2 } }
+    : roomKind === 'elite'
+      ? { shieldAdvance: { bonusDamage: 1 } }
+      : {};
   enemy.stats = {
     ...enemy.stats,
-    hp: roomKind === 'boss' ? 34 : roomKind === 'elite' ? 28 : starterEnemy.stats.hp,
-    maxHp: roomKind === 'boss' ? 34 : roomKind === 'elite' ? 28 : starterEnemy.stats.maxHp,
-    strength: roomKind === 'boss' ? 8 : roomKind === 'elite' ? 6 : starterEnemy.stats.strength,
-    agility: roomKind === 'elite' ? 2 : starterEnemy.stats.agility,
+    hp: roomKind === 'boss' ? 34 : roomKind === 'elite' ? 28 : profile === enemyTacticsProfiles.spider ? 16 : starterEnemy.stats.hp,
+    maxHp: roomKind === 'boss' ? 34 : roomKind === 'elite' ? 28 : profile === enemyTacticsProfiles.spider ? 16 : starterEnemy.stats.maxHp,
+    strength: roomKind === 'boss' ? 8 : roomKind === 'elite' ? 6 : profile === enemyTacticsProfiles.guard ? 5 : profile === enemyTacticsProfiles.spider ? 4 : starterEnemy.stats.strength,
+    agility: roomKind === 'elite' ? 2 : profile === enemyTacticsProfiles.spider ? 1 : starterEnemy.stats.agility,
   };
   enemy.block = 0;
   enemy.statusEffects = [];
@@ -105,6 +127,7 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
     ...state.enemy,
     block: result.enemyRemainingBlock,
     statusEffects: result.enemyStatusEffects,
+    enemyCooldowns: result.nextEnemyCooldowns,
     stats: {
       ...state.enemy.stats,
       hp: result.enemyRemainingHp,
@@ -202,4 +225,3 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
     currentView: 'reward' as ViewName,
   };
 }
-

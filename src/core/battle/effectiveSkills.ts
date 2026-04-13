@@ -1,6 +1,15 @@
 // 根据基础技能与局内修正，生成当前战斗中真正生效的技能数据。
-import { battleSkills, getSkillDescription } from '../skills/skills';
-import type { BattleSkillDefinition, BattleSkillId, BattleSkillRuntimeState, CharacterStats } from '../../types';
+import { battleSkills, getEnemySkillDescription, getSkillDescription } from '../skills/skills';
+import { enemySkills } from '../skills/enemySkills';
+import type {
+  BattleSkillDefinition,
+  BattleSkillId,
+  BattleSkillRuntimeState,
+  CharacterStats,
+  EnemySkillDefinition,
+  EnemySkillId,
+  EnemySkillRuntimeState,
+} from '../../types';
 
 // 基于静态技能模板与局内修正，计算当前这局真正生效的技能数值。
 export function getEffectiveSkill(
@@ -38,6 +47,41 @@ export function getEffectiveSkill(
   };
 }
 
+export function getEffectiveEnemySkill(
+  skillId: EnemySkillId,
+  runtimeState: EnemySkillRuntimeState = {},
+  currentStats?: Pick<CharacterStats, 'strength' | 'agility'>,
+): EnemySkillDefinition {
+  const baseSkill = enemySkills[skillId];
+  const modifier = runtimeState[skillId];
+
+  return {
+    ...baseSkill,
+    cooldown: Math.max(0, baseSkill.cooldown + (modifier?.cooldownOffset ?? 0)),
+    description: getEnemySkillDescription(
+      {
+        template: baseSkill.template,
+        cooldown: Math.max(0, baseSkill.cooldown + (modifier?.cooldownOffset ?? 0)),
+        numbers: {
+          ...baseSkill.numbers,
+          damageMultiplier: (baseSkill.numbers.damageMultiplier ?? 1) + (modifier?.damageMultiplierBonus ?? 0),
+          bonusDamage: (baseSkill.numbers.bonusDamage ?? 0) + (modifier?.bonusDamage ?? 0),
+          blockGain: (baseSkill.numbers.blockGain ?? 0) + (modifier?.blockGainBonus ?? 0),
+          extraEffects: [...(baseSkill.numbers.extraEffects ?? []), ...(modifier?.extraEffects ?? [])],
+        },
+      },
+      currentStats,
+    ),
+    numbers: {
+      ...baseSkill.numbers,
+      damageMultiplier: (baseSkill.numbers.damageMultiplier ?? 1) + (modifier?.damageMultiplierBonus ?? 0),
+      bonusDamage: (baseSkill.numbers.bonusDamage ?? 0) + (modifier?.bonusDamage ?? 0),
+      blockGain: (baseSkill.numbers.blockGain ?? 0) + (modifier?.blockGainBonus ?? 0),
+      extraEffects: [...(baseSkill.numbers.extraEffects ?? []), ...(modifier?.extraEffects ?? [])],
+    },
+  };
+}
+
 // 为界面或批量逻辑生成一份当前局内的有效技能表。
 export function getEffectiveSkillMap(
   runtimeState: BattleSkillRuntimeState = {},
@@ -47,4 +91,3 @@ export function getEffectiveSkillMap(
     (Object.keys(battleSkills) as BattleSkillId[]).map((skillId) => [skillId, getEffectiveSkill(skillId, runtimeState, currentStats)]),
   ) as Record<BattleSkillId, BattleSkillDefinition>;
 }
-

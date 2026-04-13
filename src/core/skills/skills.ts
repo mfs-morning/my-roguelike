@@ -6,6 +6,7 @@ import type {
   BattleTacticConditionKind,
   BattleTacticSlot,
   CharacterStats,
+  EnemySkillDefinition,
 } from '../../types';
 
 function formatDamageFormula(multiplier = 1, bonusDamage = 0) {
@@ -78,6 +79,13 @@ export function getSkillDescription(
 
   parts.push(formatCooldown(cooldown));
   return parts.join('，');
+}
+
+export function getEnemySkillDescription(
+  definition: Pick<EnemySkillDefinition, 'template' | 'cooldown' | 'numbers'>,
+  currentStats?: Pick<CharacterStats, 'strength' | 'agility'>,
+) {
+  return getSkillDescription(definition, currentStats);
 }
 
 function createSkillDefinition(definition: Omit<BattleSkillDefinition, 'description'>): BattleSkillDefinition {

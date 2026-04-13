@@ -6,7 +6,8 @@ import { Panel } from '../components/ui/Panel';
 import { SectionTitle } from '../components/ui/SectionTitle';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useGameLoop } from '../hooks/useGameLoop';
-import type { BattleStatusEffect } from '../types';
+import { enemySkills } from '../core/skills/enemySkills';
+import type { BattleStatusEffect, EnemySkillDefinition } from '../types';
 import { useGameStore } from '../store/useGameStore';
 
 interface BattleViewProps {
@@ -23,12 +24,23 @@ function getStatusLabel(effect: BattleStatusEffect) {
   return `${kindLabel} ${effect.value}/${effect.duration}`;
 }
 
+function getEnemyActionBadgeTone(skill: EnemySkillDefinition | undefined): 'accent' | 'bright' {
+  if (!skill) {
+    return 'accent';
+  }
+
+  return skill.template === 'gainBlock' ? 'bright' : 'accent';
+}
+
 export function BattleView({ isReordering = false }: BattleViewProps) {
   const hero = useGameStore((state) => state.hero);
   const enemy = useGameStore((state) => state.enemy);
   const battleLog = useGameStore((state) => state.battleLog);
   const runBattleRound = useGameStore((state) => state.runBattleRound);
   const setView = useGameStore((state) => state.setView);
+  const currentEnemySkill = enemy.tacticsProfile.tactics.find((slot) => (enemy.enemyCooldowns[slot.skillId] ?? 0) === 0)
+    ? enemySkills[enemy.tacticsProfile.tactics.find((slot) => (enemy.enemyCooldowns[slot.skillId] ?? 0) === 0)!.skillId]
+    : undefined;
 
   const canFight = hero.stats.hp > 0 && enemy.stats.hp > 0;
 
@@ -61,6 +73,13 @@ export function BattleView({ isReordering = false }: BattleViewProps) {
           <InfoCard label="Enemy" title={enemy.name} description="当前遭遇的敌人" className="grid gap-3">
             <HealthBar value={enemy.stats.hp} max={enemy.stats.maxHp} tone="enemy" />
             <div className="flex flex-wrap gap-2">
+              <StatusBadge>{enemy.tacticsProfile.label}</StatusBadge>
+              {currentEnemySkill ? (
+                <StatusBadge tone={getEnemyActionBadgeTone(currentEnemySkill)}>{currentEnemySkill.label}</StatusBadge>
+              ) : null}
+            </div>
+            <p className="m-0 text-sm leading-6 text-[var(--color-text-muted)]">{enemy.tacticsProfile.description}</p>
+            <div className="flex flex-wrap gap-2">
               {enemy.statusEffects.length > 0 ? (
                 enemy.statusEffects.map((effect, index) => (
                   <StatusBadge key={`${effect.kind}-${index}`} tone={statusToneMap[effect.kind]}>
@@ -73,7 +92,6 @@ export function BattleView({ isReordering = false }: BattleViewProps) {
             </div>
           </InfoCard>
         </div>
-
 
         <div className="flex flex-wrap gap-3">
           <Button onClick={runBattleRound} disabled={!canFight}>

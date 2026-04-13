@@ -1,5 +1,5 @@
 // 战术槽排序、条件判定与技能自动选择相关的战斗决策逻辑。
-import { getEffectiveSkill } from './effectiveSkills';
+import { getEffectiveEnemySkill, getEffectiveSkill } from './effectiveSkills';
 import type {
   BattleCooldownState,
   BattleSkillId,
@@ -8,6 +8,11 @@ import type {
   BattleTacticSlot,
   Character,
   Enemy,
+  EnemyCooldownState,
+  EnemySkillId,
+  EnemySkillRuntimeState,
+  EnemyTacticCondition,
+  EnemyTacticSlot,
 } from '../../types';
 
 function getHpPercent(currentHp: number, maxHp: number) {
@@ -32,6 +37,34 @@ export function doesTacticConditionMatch(
   }
 
   return getHpPercent(hero.stats.hp, hero.stats.maxHp) < condition.value;
+}
+
+export function doesEnemyTacticConditionMatch(
+  condition: EnemyTacticCondition,
+  hero: Character,
+  enemy: Enemy,
+) {
+  if (condition.kind === 'always') {
+    return true;
+  }
+
+  if (condition.kind === 'hero_hp_below_percent') {
+    return getHpPercent(hero.stats.hp, hero.stats.maxHp) < condition.value;
+  }
+
+  if (condition.kind === 'enemy_hp_below_percent') {
+    return getHpPercent(enemy.stats.hp, enemy.stats.maxHp) < condition.value;
+  }
+
+  if (condition.kind === 'hero_missing_status') {
+    return !hero.statusEffects.some((effect) => effect.kind === condition.statusKind);
+  }
+
+  if (condition.kind === 'enemy_block_below_value') {
+    return enemy.block < condition.value;
+  }
+
+  return hero.block > condition.value;
 }
 
 export function moveSkill(tactics: BattleTacticSlot[], skillId: BattleSkillId, direction: 'up' | 'down') {
@@ -80,6 +113,19 @@ export function pickHeroSkill(
   );
 }
 
+export function pickEnemySkill(
+  tactics: EnemyTacticSlot[],
+  cooldowns: EnemyCooldownState,
+  hero: Character,
+  enemy: Enemy,
+) {
+  return (
+    tactics.find(
+      (slot) => (cooldowns[slot.skillId] ?? 0) === 0 && doesEnemyTacticConditionMatch(slot.condition, hero, enemy),
+    )?.skillId ?? null
+  );
+}
+
 // 根据当前局内技能配置更新冷却，支持升级后冷却减少等效果。
 export function updateCooldowns(
   cooldowns: BattleCooldownState,
@@ -91,5 +137,21 @@ export function updateCooldowns(
   ) as BattleCooldownState;
 
   next[usedSkillId] = getEffectiveSkill(usedSkillId, runtimeState).cooldown;
+  return next;
+}
+
+export function updateEnemyCooldowns(
+  cooldowns: EnemyCooldownState,
+  usedSkillId: EnemySkillId | null,
+  runtimeState: EnemySkillRuntimeState = {},
+) {
+  const next = Object.fromEntries(
+    Object.entries(cooldowns).map(([skillId, value]) => [skillId, Math.max(0, (value ?? 0) - 1)]),
+  ) as EnemyCooldownState;
+
+  if (usedSkillId) {
+    next[usedSkillId] = getEffectiveEnemySkill(usedSkillId, runtimeState).cooldown;
+  }
+
   return next;
 }
