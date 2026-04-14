@@ -83,6 +83,7 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
       strengthBoost: 0,
       heal: 0,
       choices: [
+        buildChoice('god-mode', '仙人模式', '请输入文本', { gold: 999, maxHpBoost: 999, strengthBoost: 999, heal: 0 }),
         buildChoice('vital-blessing', '生命祝福', '生命上限 +5，并回复 5 点生命。', { gold: 0, maxHpBoost: 5, strengthBoost: 0, heal: 5 }),
         buildChoice('fury-blessing', '锋锐祝福', '力量 +2。', { gold: 0, maxHpBoost: 0, strengthBoost: 2, heal: 0 }),
       ],
@@ -103,6 +104,7 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
       choices: [
         buildChoice('event-gold', '捡走散币', '获得 10 金币。', { gold: 10, maxHpBoost: 0, strengthBoost: 0, heal: 0 }),
         buildChoice('event-rest', '短暂整备', '回复 6 点生命。', { gold: 0, maxHpBoost: 0, strengthBoost: 0, heal: 6 }),
+        buildChoice('fury-blessing', '锋锐祝福', '力量 +2。', { gold: 0, maxHpBoost: 0, strengthBoost: 2, heal: 0 }),
       ],
     };
   }
