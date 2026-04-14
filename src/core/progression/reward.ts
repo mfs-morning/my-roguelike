@@ -83,9 +83,8 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
       strengthBoost: 0,
       heal: 0,
       choices: [
-        buildChoice('god-mode', '仙人模式', '请输入文本', { gold: 999, maxHpBoost: 999, strengthBoost: 999, heal: 0 }),
-        buildChoice('vital-blessing', '生命祝福', '生命上限 +5，并回复 5 点生命。', { gold: 0, maxHpBoost: 5, strengthBoost: 0, heal: 5 }),
-        buildChoice('fury-blessing', '锋锐祝福', '力量 +2。', { gold: 0, maxHpBoost: 0, strengthBoost: 2, heal: 0 }),
+        buildChoice('vital-blessing', '生命祝福', '生命上限 +6，并回复 8 点生命。', { gold: 0, maxHpBoost: 6, strengthBoost: 0, heal: 8 }),
+        buildChoice('fury-blessing', '锋锐祝福', '力量 +3。', { gold: 0, maxHpBoost: 0, strengthBoost: 3, heal: 0 }),
       ],
     };
   }
@@ -102,9 +101,9 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
       strengthBoost: 0,
       heal: 0,
       choices: [
-        buildChoice('event-gold', '捡走散币', '获得 10 金币。', { gold: 10, maxHpBoost: 0, strengthBoost: 0, heal: 0 }),
-        buildChoice('event-rest', '短暂整备', '回复 6 点生命。', { gold: 0, maxHpBoost: 0, strengthBoost: 0, heal: 6 }),
-        buildChoice('fury-blessing', '锋锐祝福', '力量 +2。', { gold: 0, maxHpBoost: 0, strengthBoost: 2, heal: 0 }),
+        buildChoice('event-gold', '捡走散币', '获得 12 金币。', { gold: 12, maxHpBoost: 0, strengthBoost: 0, heal: 0 }),
+        buildChoice('event-rest', '短暂整备', '回复 8 点生命。', { gold: 0, maxHpBoost: 0, strengthBoost: 0, heal: 8 }),
+        buildChoice('event-fury', '冒险心得', '力量 +1。', { gold: 0, maxHpBoost: 0, strengthBoost: 1, heal: 0 }),
       ],
     };
   }
@@ -125,7 +124,7 @@ export function buildReward(node: MapNodeData, options: BuildRewardOptions = {})
         : node.kind === 'boss'
           ? '守关者倒下了，你夺回了遗迹深处的宝藏。'
           : '你拿下了当前房间。') + skillText,
-    gold: node.kind === 'elite' ? 12 : node.kind === 'boss' ? 20 : 5,
+    gold: node.kind === 'elite' ? 16 : node.kind === 'boss' ? 28 : 8,
     maxHpBoost: 0,
     strengthBoost: 0,
     heal: 0,

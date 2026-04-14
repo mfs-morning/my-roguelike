@@ -43,10 +43,10 @@ export function getSkillDescription(
   const { template, cooldown, numbers } = definition;
   const parts: string[] = [];
 
-  if (template === 'attack') {
-    const damageMultiplier = numbers.damageMultiplier ?? 1;
-    const bonusDamage = numbers.bonusDamage ?? 0;
+  const damageMultiplier = numbers.damageMultiplier ?? 1;
+  const bonusDamage = numbers.bonusDamage ?? 0;
 
+  if (template === 'attack' || template === 'execute' || template === 'statusBurst') {
     if (currentStats) {
       const damage = Math.max(1, Math.floor(currentStats.strength * damageMultiplier) + bonusDamage);
       const formula = formatDamageFormula(damageMultiplier, bonusDamage);
@@ -57,20 +57,57 @@ export function getSkillDescription(
     }
   }
 
-  if (template === 'gainBlock') {
+  if (template === 'aoe') {
+    if (currentStats) {
+      const damage = Math.max(1, Math.floor(currentStats.strength * damageMultiplier) + bonusDamage);
+      parts.push(`对所有敌人造成 ${damage} 点相同伤害`);
+    } else {
+      parts.push('对所有敌人造成相同伤害');
+    }
+  }
+
+  if (template === 'splashStrike') {
+    const primaryDamageMultiplier = numbers.primaryDamageMultiplier ?? damageMultiplier;
+    const primaryBonusDamage = numbers.primaryBonusDamage ?? bonusDamage;
+    const splashDamageMultiplier = numbers.splashDamageMultiplier ?? 0.35;
+    const splashBonusDamage = numbers.splashBonusDamage ?? 0;
+
+    if (currentStats) {
+      const mainDamage = Math.max(1, Math.floor(currentStats.strength * primaryDamageMultiplier) + primaryBonusDamage);
+      const splashDamage = Math.max(0, Math.floor(currentStats.strength * splashDamageMultiplier) + splashBonusDamage);
+      parts.push(`主目标造成 ${mainDamage} 点伤害，并对后排造成 ${splashDamage} 点溅射伤害`);
+    } else {
+      parts.push('对主目标造成伤害，并将部分伤害传到后排');
+    }
+  }
+
+  if (template === 'gainBlock' || template === 'gainBlockAttack') {
     const baseBlockGain = numbers.blockGain ?? 0;
-    const bonusDamage = numbers.bonusDamage ?? 0;
-    const damageText = bonusDamage > 0 ? `造成 ${bonusDamage} 点伤害，` : '';
-    const blockMultiplier = 1;
+    const attackText = template === 'gainBlockAttack'
+      ? currentStats
+        ? `造成 ${Math.max(1, Math.floor(currentStats.strength * damageMultiplier) + bonusDamage)} 点伤害，`
+        : '造成伤害，'
+      : bonusDamage > 0
+        ? `造成 ${bonusDamage} 点伤害，`
+        : '';
+    const blockMultiplier = template === 'gainBlockAttack' ? 0.6 : 1;
 
     if (currentStats) {
       const blockGain = Math.max(0, Math.floor(currentStats.agility * blockMultiplier) + baseBlockGain);
       const formula = formatBlockFormula(blockMultiplier, baseBlockGain);
-      parts.push(`${damageText}获得 ${blockGain}（${formula}）点格挡`);
+      parts.push(`${attackText}获得 ${blockGain}（${formula}）点格挡`);
     } else {
       const formula = formatBlockFormula(blockMultiplier, baseBlockGain);
-      parts.push(`${damageText}获得（${formula}）点格挡`);
+      parts.push(`${attackText}获得（${formula}）点格挡`);
     }
+  }
+
+  if (template === 'execute') {
+    parts.push(`若目标生命低于 ${numbers.executeThresholdPercent ?? 35}% ，则改为高额处决伤害`);
+  }
+
+  if (template === 'statusBurst') {
+    parts.push(`每层异常状态额外追加 ${numbers.statusBurstPerStack ?? 1} 点伤害`);
   }
 
   if (numbers.extraEffects?.length) {
@@ -160,11 +197,11 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: defaultTacticConditions,
-    cooldown: 2,
+    cooldown: 1,
     template: 'attack',
     numbers: {
-      damageMultiplier: 1.2,
-      bonusDamage: 0,
+      damageMultiplier: 1.35,
+      bonusDamage: 1,
       blockGain: 0,
     },
   }),
@@ -174,13 +211,13 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
-    cooldown: 2,
+    cooldown: 1,
     template: 'attack',
     numbers: {
-      damageMultiplier: 0.9,
-      bonusDamage: 0,
+      damageMultiplier: 1,
+      bonusDamage: 1,
       blockGain: 0,
-      extraEffects: [{ kind: 'bleed', target: 'enemy', value: 2, duration: 3 }],
+      extraEffects: [{ kind: 'bleed', target: 'enemy', value: 3, duration: 3 }],
     },
   }),
   guard: createSkillDefinition({
@@ -189,12 +226,12 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'block'],
     availableConditions: ['always', 'hero_hp_below_percent'],
-    cooldown: 2,
+    cooldown: 1,
     template: 'gainBlock',
     numbers: {
       damageMultiplier: 0,
       bonusDamage: 0,
-      blockGain: 5,
+      blockGain: 8,
     },
   }),
 };

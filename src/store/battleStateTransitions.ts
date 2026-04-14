@@ -60,20 +60,20 @@ export function buildEnemyForRoom(
       : profile === enemyTacticsProfiles.guard
         ? position === 'back' ? '后排守卫' : '持盾守卫'
         : position === 'back' ? '后排史莱姆' : starterEnemy.name;
-  enemy.rewardGold = roomKind === 'boss' ? 20 : roomKind === 'elite' ? 12 : starterEnemy.rewardGold;
+  enemy.rewardGold = roomKind === 'boss' ? 24 : roomKind === 'elite' ? 14 : 6;
   enemy.tacticsProfile = structuredClone(profile);
   enemy.enemyCooldowns = createEnemyCooldownState(profile.tactics.map((slot) => slot.skillId));
   enemy.enemySkillRuntimeState = roomKind === 'boss'
-    ? { wardenSlash: { bonusDamage: 2 }, wardenAdvance: { blockGainBonus: 2 } }
+    ? { wardenSlash: { bonusDamage: 1 }, wardenAdvance: { blockGainBonus: 1 } }
     : roomKind === 'elite'
-      ? { shieldAdvance: { bonusDamage: 1 } }
+      ? { shieldAdvance: { bonusDamage: 0 } }
       : {};
   enemy.stats = {
     ...enemy.stats,
-    hp: roomKind === 'boss' ? 34 : roomKind === 'elite' ? 28 : profile === enemyTacticsProfiles.spider ? 16 : starterEnemy.stats.hp,
-    maxHp: roomKind === 'boss' ? 34 : roomKind === 'elite' ? 28 : profile === enemyTacticsProfiles.spider ? 16 : starterEnemy.stats.maxHp,
-    strength: roomKind === 'boss' ? 8 : roomKind === 'elite' ? 6 : profile === enemyTacticsProfiles.guard ? 5 : profile === enemyTacticsProfiles.spider ? 4 : starterEnemy.stats.strength,
-    agility: roomKind === 'elite' ? 2 : profile === enemyTacticsProfiles.spider ? 1 : starterEnemy.stats.agility,
+    hp: roomKind === 'boss' ? 30 : roomKind === 'elite' ? 24 : profile === enemyTacticsProfiles.spider ? 14 : 16,
+    maxHp: roomKind === 'boss' ? 30 : roomKind === 'elite' ? 24 : profile === enemyTacticsProfiles.spider ? 14 : 16,
+    strength: roomKind === 'boss' ? 6 : roomKind === 'elite' ? 5 : profile === enemyTacticsProfiles.guard ? 4 : profile === enemyTacticsProfiles.spider ? 3 : 3,
+    agility: roomKind === 'elite' ? 1 : profile === enemyTacticsProfiles.spider ? 1 : 0,
   };
   if (position === 'back') {
     enemy.stats = {

@@ -63,13 +63,15 @@ export interface BattleSkillEffectContext {
 export interface BattleSkillEffectResult {
   heroDamage: number;
   heroBlockGain: number;
+  splashDamage?: number;
+  ignoreFrontTargeting?: boolean;
   enemyDamageMultiplier?: number;
   enemyBonusDamage?: number;
   extraEffects?: BattleSkillExtraEffect[];
   summary: string;
 }
 
-export type BattleSkillTemplateId = 'attack' | 'gainBlock';
+export type BattleSkillTemplateId = 'attack' | 'gainBlock' | 'aoe' | 'splashStrike' | 'execute' | 'gainBlockAttack' | 'statusBurst';
 
 export interface BattleSkillModifier {
   cooldownOffset?: number;
@@ -86,6 +88,13 @@ export interface BattleSkillNumbers {
   damageMultiplier?: number;
   bonusDamage?: number;
   blockGain?: number;
+  primaryDamageMultiplier?: number;
+  primaryBonusDamage?: number;
+  splashDamageMultiplier?: number;
+  splashBonusDamage?: number;
+  executeThresholdPercent?: number;
+  executeDamageMultiplier?: number;
+  statusBurstPerStack?: number;
   extraEffects?: BattleSkillExtraEffect[];
 }
 
