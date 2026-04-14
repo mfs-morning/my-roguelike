@@ -36,7 +36,7 @@ function formatExtraEffect(effect: BattleSkillExtraEffect) {
   return `使${targetLabel}附加 ${effect.value} 层${kindLabel}${durationText}`;
 }
 
-export function getSkillDescription(
+export function getSkillEffectDescription(
   definition: Pick<BattleSkillDefinition, 'template' | 'cooldown' | 'numbers'>,
   currentStats?: Pick<CharacterStats, 'strength' | 'agility'>,
 ) {
@@ -122,13 +122,15 @@ export function getEnemySkillDescription(
   definition: Pick<EnemySkillDefinition, 'template' | 'cooldown' | 'numbers'>,
   currentStats?: Pick<CharacterStats, 'strength' | 'agility'>,
 ) {
-  return getSkillDescription(definition, currentStats);
+  return getSkillEffectDescription(definition, currentStats);
 }
 
-function createSkillDefinition(definition: Omit<BattleSkillDefinition, 'description'>): BattleSkillDefinition {
+function createSkillDefinition(
+  definition: Omit<BattleSkillDefinition, 'effectDescription'>,
+): BattleSkillDefinition {
   return {
     ...definition,
-    description: getSkillDescription(definition),
+    effectDescription: getSkillEffectDescription(definition),
   };
 }
 
@@ -140,6 +142,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   attack: createSkillDefinition({
     id: 'attack',
     label: '普攻',
+    description: '你进行一次基础近战攻击。',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: ['always'],
@@ -154,6 +157,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   heavyStrike: createSkillDefinition({
     id: 'heavyStrike',
     label: '重击',
+    description: '你以全身力道发动一次沉重攻击。',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: defaultTacticConditions,
@@ -168,6 +172,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   guard: createSkillDefinition({
     id: 'guard',
     label: '格挡',
+    description: '你采取守御姿态，准备化解接下来的攻势。',
     classId: 'warrior',
     tags: ['warrior', 'block'],
     availableConditions: defenseTacticConditions,
@@ -182,6 +187,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   rend: createSkillDefinition({
     id: 'rend',
     label: '撕裂',
+    description: '你划开一道深伤，使目标持续失血。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed'],
     availableConditions: offenseTacticConditions,
@@ -197,6 +203,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   sweepingSlash: createSkillDefinition({
     id: 'sweepingSlash',
     label: '横扫',
+    description: '你挥出宽阔斩击，同时威胁多个敌人。',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: defaultTacticConditions,
@@ -211,6 +218,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   quakeSmash: createSkillDefinition({
     id: 'quakeSmash',
     label: '震地猛砸',
+    description: '你以重击撼动地面，震波波及四周。',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: offenseTacticConditions,
@@ -225,6 +233,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   piercingThrust: createSkillDefinition({
     id: 'piercingThrust',
     label: '穿阵突刺',
+    description: '你向前突刺，锋刃余势足以威胁后列。',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: defaultTacticConditions,
@@ -243,6 +252,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   meteorHammer: createSkillDefinition({
     id: 'meteorHammer',
     label: '流星锤',
+    description: '你甩出沉重链锤，以凶猛回摆撕开阵线。',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: offenseTacticConditions,
@@ -261,6 +271,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   executioner: createSkillDefinition({
     id: 'executioner',
     label: '断头斩',
+    description: '你对濒死目标施展处决攻击。',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
@@ -277,6 +288,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   bloodburst: createSkillDefinition({
     id: 'bloodburst',
     label: '裂伤引爆',
+    description: '你引爆目标身上已累积的创伤与毒害。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed', 'poison'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
@@ -292,6 +304,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   ironAssault: createSkillDefinition({
     id: 'ironAssault',
     label: '铁壁强袭',
+    description: '你以守势推进，并在贴身时发动反击。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'block'],
     availableConditions: defaultTacticConditions,
@@ -306,6 +319,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   holdTheLine: createSkillDefinition({
     id: 'holdTheLine',
     label: '稳守反击',
+    description: '你稳住阵线，并在敌人逼近时予以回击。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'block'],
     availableConditions: defenseTacticConditions,
@@ -320,6 +334,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   venomEdge: createSkillDefinition({
     id: 'venomEdge',
     label: '淬毒刃',
+    description: '你以涂毒武器命中目标，使毒素开始发作。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'poison'],
     availableConditions: offenseTacticConditions,
@@ -335,6 +350,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   crimsonHarvest: createSkillDefinition({
     id: 'crimsonHarvest',
     label: '猩红收割',
+    description: '你在血与毒交织之际完成致命收割。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed', 'poison'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
@@ -351,6 +367,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   whirlwind: createSkillDefinition({
     id: 'whirlwind',
     label: '回旋斩',
+    description: '你旋身挥刃，对周围所有敌人造成伤害。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed'],
     availableConditions: defaultTacticConditions,
@@ -366,6 +383,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   shockwave: createSkillDefinition({
     id: 'shockwave',
     label: '冲击波',
+    description: '你以猛击震退近敌，并重新夺回立足点。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'block'],
     availableConditions: defaultTacticConditions,
@@ -380,6 +398,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   backlineCrusher: createSkillDefinition({
     id: 'backlineCrusher',
     label: '破阵重压',
+    description: '你以强横冲势撼动前列，并把压力传到后排。',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: offenseTacticConditions,
@@ -398,6 +417,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   reaperRush: createSkillDefinition({
     id: 'reaperRush',
     label: '死线突进',
+    description: '你迅速逼近虚弱目标，完成追猎一击。',
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
@@ -414,6 +434,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   toxicDetonation: createSkillDefinition({
     id: 'toxicDetonation',
     label: '毒爆',
+    description: '你诱发目标体内毒素一并爆发。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'poison'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
@@ -430,6 +451,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
   shieldRam: createSkillDefinition({
     id: 'shieldRam',
     label: '盾撞',
+    description: '你以盾牌冲撞目标，并顺势补上一击。',
     classId: 'warrior',
     tags: ['warrior', 'strike', 'block'],
     availableConditions: defenseTacticConditions,

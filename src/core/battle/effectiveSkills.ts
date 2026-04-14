@@ -1,5 +1,5 @@
 // 根据基础技能与局内修正，生成当前战斗中真正生效的技能数据。
-import { battleSkills, getEnemySkillDescription, getSkillDescription } from '../skills/skills';
+import { battleSkills, getEnemySkillDescription, getSkillEffectDescription } from '../skills/skills';
 import { enemySkills } from '../skills/enemySkills';
 import type {
   BattleSkillDefinition,
@@ -19,31 +19,27 @@ export function getEffectiveSkill(
 ): BattleSkillDefinition {
   const baseSkill = battleSkills[skillId];
   const modifier = runtimeState[skillId];
+  const cooldown = Math.max(0, baseSkill.cooldown + (modifier?.cooldownOffset ?? 0));
+  const numbers = {
+    ...baseSkill.numbers,
+    damageMultiplier: (baseSkill.numbers.damageMultiplier ?? 1) + (modifier?.damageMultiplierBonus ?? 0),
+    bonusDamage: (baseSkill.numbers.bonusDamage ?? 0) + (modifier?.bonusDamage ?? 0),
+    blockGain: (baseSkill.numbers.blockGain ?? 0) + (modifier?.blockGainBonus ?? 0),
+    extraEffects: [...(baseSkill.numbers.extraEffects ?? []), ...(modifier?.extraEffects ?? [])],
+  };
 
   return {
     ...baseSkill,
-    cooldown: Math.max(0, baseSkill.cooldown + (modifier?.cooldownOffset ?? 0)),
-    description: getSkillDescription(
+    cooldown,
+    effectDescription: getSkillEffectDescription(
       {
         template: baseSkill.template,
-        cooldown: Math.max(0, baseSkill.cooldown + (modifier?.cooldownOffset ?? 0)),
-        numbers: {
-          ...baseSkill.numbers,
-          damageMultiplier: (baseSkill.numbers.damageMultiplier ?? 1) + (modifier?.damageMultiplierBonus ?? 0),
-          bonusDamage: (baseSkill.numbers.bonusDamage ?? 0) + (modifier?.bonusDamage ?? 0),
-          blockGain: (baseSkill.numbers.blockGain ?? 0) + (modifier?.blockGainBonus ?? 0),
-          extraEffects: [...(baseSkill.numbers.extraEffects ?? []), ...(modifier?.extraEffects ?? [])],
-        },
+        cooldown,
+        numbers,
       },
       currentStats,
     ),
-    numbers: {
-      ...baseSkill.numbers,
-      damageMultiplier: (baseSkill.numbers.damageMultiplier ?? 1) + (modifier?.damageMultiplierBonus ?? 0),
-      bonusDamage: (baseSkill.numbers.bonusDamage ?? 0) + (modifier?.bonusDamage ?? 0),
-      blockGain: (baseSkill.numbers.blockGain ?? 0) + (modifier?.blockGainBonus ?? 0),
-      extraEffects: [...(baseSkill.numbers.extraEffects ?? []), ...(modifier?.extraEffects ?? [])],
-    },
+    numbers,
   };
 }
 
@@ -54,31 +50,27 @@ export function getEffectiveEnemySkill(
 ): EnemySkillDefinition {
   const baseSkill = enemySkills[skillId];
   const modifier = runtimeState[skillId];
+  const cooldown = Math.max(0, baseSkill.cooldown + (modifier?.cooldownOffset ?? 0));
+  const numbers = {
+    ...baseSkill.numbers,
+    damageMultiplier: (baseSkill.numbers.damageMultiplier ?? 1) + (modifier?.damageMultiplierBonus ?? 0),
+    bonusDamage: (baseSkill.numbers.bonusDamage ?? 0) + (modifier?.bonusDamage ?? 0),
+    blockGain: (baseSkill.numbers.blockGain ?? 0) + (modifier?.blockGainBonus ?? 0),
+    extraEffects: [...(baseSkill.numbers.extraEffects ?? []), ...(modifier?.extraEffects ?? [])],
+  };
 
   return {
     ...baseSkill,
-    cooldown: Math.max(0, baseSkill.cooldown + (modifier?.cooldownOffset ?? 0)),
-    description: getEnemySkillDescription(
+    cooldown,
+    effectDescription: getEnemySkillDescription(
       {
         template: baseSkill.template,
-        cooldown: Math.max(0, baseSkill.cooldown + (modifier?.cooldownOffset ?? 0)),
-        numbers: {
-          ...baseSkill.numbers,
-          damageMultiplier: (baseSkill.numbers.damageMultiplier ?? 1) + (modifier?.damageMultiplierBonus ?? 0),
-          bonusDamage: (baseSkill.numbers.bonusDamage ?? 0) + (modifier?.bonusDamage ?? 0),
-          blockGain: (baseSkill.numbers.blockGain ?? 0) + (modifier?.blockGainBonus ?? 0),
-          extraEffects: [...(baseSkill.numbers.extraEffects ?? []), ...(modifier?.extraEffects ?? [])],
-        },
+        cooldown,
+        numbers,
       },
       currentStats,
     ),
-    numbers: {
-      ...baseSkill.numbers,
-      damageMultiplier: (baseSkill.numbers.damageMultiplier ?? 1) + (modifier?.damageMultiplierBonus ?? 0),
-      bonusDamage: (baseSkill.numbers.bonusDamage ?? 0) + (modifier?.bonusDamage ?? 0),
-      blockGain: (baseSkill.numbers.blockGain ?? 0) + (modifier?.blockGainBonus ?? 0),
-      extraEffects: [...(baseSkill.numbers.extraEffects ?? []), ...(modifier?.extraEffects ?? [])],
-    },
+    numbers,
   };
 }
 

@@ -104,6 +104,7 @@ export interface BattleSkillDefinition {
   id: BattleSkillId;
   label: string;
   description: string;
+  effectDescription: string;
   classId: CharacterClassId;
   tags: BattleSkillTag[];
   availableConditions: BattleTacticConditionKind[];
@@ -116,6 +117,7 @@ export interface EnemySkillDefinition {
   id: EnemySkillId;
   label: string;
   description: string;
+  effectDescription: string;
   cooldown: number;
   template: BattleSkillTemplateId;
   numbers: BattleSkillNumbers;

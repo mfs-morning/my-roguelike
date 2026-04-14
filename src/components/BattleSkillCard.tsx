@@ -1,6 +1,6 @@
 import { HoverDetail } from './ui/HoverDetail';
 import { StatusBadge } from './ui/StatusBadge';
-import type { BattleSkillDefinition, BattleSkillExtraEffect } from '../types';
+import type { BattleSkillDefinition } from '../types';
 
 interface BattleSkillCardProps {
   skill: BattleSkillDefinition;
@@ -11,13 +11,6 @@ interface BattleSkillCardProps {
   onDragOver: () => void;
   onDrop: () => void;
   onDragEnd: () => void;
-}
-
-function formatExtraEffect(effect: BattleSkillExtraEffect) {
-  const kindLabel = effect.kind === 'poison' ? '中毒' : '流血';
-  const targetLabel = effect.target === 'enemy' ? '敌方' : '自身';
-  const durationText = effect.duration ? `，持续 ${effect.duration} 回合` : '';
-  return `${targetLabel}附加${kindLabel} ${effect.value} 点${durationText}`;
 }
 
 export function BattleSkillCard({
@@ -31,13 +24,13 @@ export function BattleSkillCard({
   onDragEnd,
 }: BattleSkillCardProps) {
   const ready = cooldown === 0;
-  const extraEffectText = skill.numbers.extraEffects?.map(formatExtraEffect).join('；');
+  const hoverDescription = `${skill.description} ${skill.effectDescription}`.trim();
 
   return (
     <HoverDetail
       align="right"
       title={skill.label}
-      description={extraEffectText ? `${skill.description} ${extraEffectText}` : skill.description}
+      description={hoverDescription}
       className="w-full"
       trigger={
         <div

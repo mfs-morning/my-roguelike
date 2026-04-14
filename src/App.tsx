@@ -29,7 +29,7 @@ function App() {
           <SectionTitle
             eyebrow="React + TypeScript + Zustand"
             title="My Roguelike"
-            description="保持轻量结构，先把最小可玩闭环跑通，再慢慢往上叠系统。"
+            description="内测"
             className="max-w-md"
           />
         </div>
