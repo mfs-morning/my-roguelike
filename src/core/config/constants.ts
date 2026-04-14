@@ -41,13 +41,7 @@ export const starterEnemy: Enemy = {
 export { battleSkills, defaultBattleTactics, defaultUnlockedBattleSkills };
 
 export function createBattleCooldownState(): BattleCooldownState {
-  return {
-    attack: 0,
-    attackPlus2: 0,
-    attackPlus3: 0,
-    attackPlus4: 0,
-    heavyStrike: 0,
-    guard: 0,
-    rend: 0,
-  };
+  return Object.fromEntries(
+    Object.keys(battleSkills).map((skillId) => [skillId, 0]),
+  ) as BattleCooldownState;
 }

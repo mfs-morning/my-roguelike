@@ -1,7 +1,9 @@
+import type { BattleSkillId as BattleSkillIdType } from '../core/skills/skillIds';
+
 export type ViewName = 'town' | 'map' | 'battle' | 'reward';
 export type BattleOutcome = 'victory' | 'defeat';
 export type RoomKind = 'battle' | 'elite' | 'event' | 'treasure' | 'blessing' | 'boss' | 'rest';
-export type BattleSkillId = 'attack' | 'heavyStrike' | 'guard' | 'rend' | 'attackPlus2' | 'attackPlus3' | 'attackPlus4';
+export type BattleSkillId = BattleSkillIdType;
 export type EnemySkillId =
   | 'oozeSlam'
   | 'oozeBurst'
