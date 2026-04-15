@@ -19,12 +19,13 @@ function groupEntries(entries: BattleLogEntry[]) {
 
   for (const entry of entries) {
     if (entry.kind === 'round') {
-      currentRoundGroup = {
-        round: entry.round,
+      const nextRoundGroup: BattleLogGroup = {
         title: entry.text,
         entries: [],
+        ...(entry.round !== undefined ? { round: entry.round } : {}),
       };
-      groups.push(currentRoundGroup);
+      currentRoundGroup = nextRoundGroup;
+      groups.push(nextRoundGroup);
       continue;
     }
 

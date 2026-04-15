@@ -83,7 +83,7 @@ export function buildInitialState(initialSkillDropChance: number): GameBaseState
     enemy: cloneEnemy(),
     backEnemy: null,
     generatedMap: generateMapSkeleton(),
-    battleLog: [{ id: 'log-1', text: '新的冒险开始了。' }],
+    battleLog: [{ id: 'log-1', kind: 'system', text: '新的冒险开始了。' }],
     activeRoomId: null,
     pendingReward: null,
     battleSummary: null,

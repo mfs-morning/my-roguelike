@@ -68,7 +68,7 @@ export const useGameStore = create<GameState>((set) => ({
           pendingReward: room.kind === 'rest' ? buildRestReward(room.id) : buildReward(room),
           battleSummary: null,
           currentView: 'reward',
-          battleLog: [{ id: crypto.randomUUID(), text: `${room.label} 触发了特殊效果。` }],
+          battleLog: [{ id: crypto.randomUUID(), kind: 'system', text: `${room.label} 触发了特殊效果。` }],
         };
       }
 
