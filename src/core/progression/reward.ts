@@ -40,7 +40,7 @@ export function rollBattleSkillDropChoices(
     return [];
   }
 
-  const guaranteedDrop = node.kind === 'elite' || node.kind === 'boss' || clearedBattleCount < 3;
+  const guaranteedDrop = node.kind === 'elite' || node.kind === 'boss' || clearedBattleCount < 2;
   const randomDrop = Math.random() < dropChance;
 
   if (!guaranteedDrop && !randomDrop) {

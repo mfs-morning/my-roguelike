@@ -66,6 +66,7 @@ export function resolveRewardClaimState(state: ClaimRewardState, choiceId?: stri
       ...state.battleLog,
       {
         id: crypto.randomUUID(),
+        kind: 'system',
         text: appliedReward.grantedSkillId
           ? '你收下新技巧，稍作整备后准备继续前进。'
           : remainingNodes.length === 0
