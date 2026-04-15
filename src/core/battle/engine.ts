@@ -3,7 +3,7 @@ import { skillTemplates } from '../skills/skillTemplates';
 import { pickEnemySkill, updateEnemyCooldowns } from './battlePriority';
 import { getEffectiveEnemySkill, getEffectiveSkill } from './effectiveSkills';
 import { applySkillStatusEffects, resolveStartOfTurnStatusEffects } from './statusEffects';
-import type { BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy, EnemySkillId } from '../../types';
+import type { BattleLogEntry, BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy, EnemySkillId } from '../../types';
 
 // 计算本次攻击的基础伤害，至少造成 1 点。
 function getBaseDamage(strength: number, agility: number) {
@@ -16,6 +16,7 @@ function applyDamage(currentHp: number, currentBlock: number, incomingDamage: nu
   const damageTaken = Math.max(0, incomingDamage - absorbed);
 
   return {
+    absorbed,
     remainingHp: Math.max(0, currentHp - damageTaken),
     remainingBlock: Math.max(0, currentBlock - incomingDamage),
     damageTaken,
@@ -70,15 +71,21 @@ function resolveEnemySkill(hero: Character, enemy: Enemy, enemySkillId: EnemySki
     },
   };
 
-  const logs = [
-    effect.heroDamage > 0
-      ? `${enemy.name} 使用${enemySkill.label}，造成 ${heroAfterEnemyHit.damageTaken} 点伤害。`
-      : `${enemy.name} 使用${enemySkill.label}。`,
+  const logs: Omit<BattleLogEntry, 'id'>[] = [
+    {
+      kind: 'enemy_action',
+      actor: enemy.name,
+      text: `${enemy.name} 使用${enemySkill.label}，${formatDamageOutcome(hero.name, effect.heroDamage, heroAfterEnemyHit.damageTaken, heroAfterEnemyHit.absorbed)}。`,
+    },
     ...effectApplication.logs,
   ];
 
   if (effect.heroBlockGain > 0) {
-    logs.push(`${enemy.name} 当前获得 ${effect.heroBlockGain} 点格挡。`);
+    logs.push({
+      kind: 'status',
+      actor: enemy.name,
+      text: `${enemy.name} 当前获得 ${effect.heroBlockGain} 点格挡。`,
+    });
   }
 
   return {
@@ -97,7 +104,7 @@ function resolveSingleEnemyTurn(hero: Character, enemy: Enemy) {
         nextHero: hero,
         nextEnemy: enemy,
         enemyDamageTaken: 0,
-        logs: [] as string[],
+        logs: [] as Omit<BattleLogEntry, 'id'>[],
       };
 
   return {
@@ -132,7 +139,7 @@ export function simulateBattleRound(
   heroSkillId: BattleSkillId,
   runtimeState: BattleSkillRuntimeState = {},
 ): BattleRoundResult {
-  const logs: string[] = [];
+  const logs: Omit<BattleLogEntry, 'id'>[] = [];
 
   const heroStatusResult = resolveStartOfTurnStatusEffects({
     actorName: hero.name,
@@ -143,7 +150,11 @@ export function simulateBattleRound(
   logs.push(...heroStatusResult.logs);
 
   if (heroStatusResult.remainingHp <= 0) {
-    logs.push(`${hero.name} 因持续伤害倒下。`);
+    logs.push({
+      kind: 'result',
+      actor: hero.name,
+      text: `${hero.name} 因持续伤害倒下。`,
+    });
 
     return {
       heroSkillId,
@@ -159,7 +170,7 @@ export function simulateBattleRound(
       heroRemainingBlock: heroStatusResult.remainingBlock,
       heroStatusEffects: heroStatusResult.statusEffects,
       actionSummary: '未能行动',
-      logTexts: logs,
+      logEntries: logs,
     };
   }
 
@@ -200,6 +211,11 @@ export function simulateBattleRound(
     effects: (effect.extraEffects ?? []).filter((extraEffect) => extraEffect.target === 'hero' || enemyAfterHeroHit.remainingHp > 0),
   });
 
+  logs.push({
+    kind: 'hero_action',
+    actor: hero.name,
+    text: `${hero.name} ${effect.summary}，${formatDamageOutcome(enemy.name, effect.heroDamage, enemyAfterHeroHit.damageTaken, enemyAfterHeroHit.absorbed)}${totalSuffix(effect.heroBlockGain)}。`,
+  });
   logs.push(...effectApplication.logs);
 
   const frontStatusResult = resolveStartOfTurnStatusEffects({
@@ -244,7 +260,11 @@ export function simulateBattleRound(
   nextFrontEnemy = collapsedAfterHero.frontEnemy;
   nextBackEnemy = collapsedAfterHero.backEnemy;
   if (collapsedAfterHero.promoted && nextFrontEnemy) {
-    logs.push(`${nextFrontEnemy.name} 从后排前移，顶上了前线。`);
+    logs.push({
+      kind: 'status',
+      actor: nextFrontEnemy.name,
+      text: `${nextFrontEnemy.name} 从后排前移，顶上了前线。`,
+    });
   }
 
   let heroAfterEnemyTurns: Character = {
@@ -281,17 +301,27 @@ export function simulateBattleRound(
   nextFrontEnemy = collapsedAfterEnemyTurns.frontEnemy;
   nextBackEnemy = collapsedAfterEnemyTurns.backEnemy;
   if (collapsedAfterEnemyTurns.promoted && nextFrontEnemy) {
-    logs.push(`${nextFrontEnemy.name} 从后排前移，顶上了前线。`);
+    logs.push({
+      kind: 'status',
+      actor: nextFrontEnemy.name,
+      text: `${nextFrontEnemy.name} 从后排前移，顶上了前线。`,
+    });
   }
 
-  logs.unshift(
-    totalEnemyDamage > 0
-      ? `${hero.name} ${effect.summary}，对前排造成 ${effect.heroDamage} 点伤害，承受 ${totalEnemyDamage} 点伤害。`
-      : `${hero.name} ${effect.summary}，对前排造成 ${effect.heroDamage} 点伤害。`,
-  );
-
   if (effect.heroBlockGain > 0 || heroAfterEnemyTurns.block > 0) {
-    logs.push(`${hero.name} 当前剩余 ${heroAfterEnemyTurns.block} 点格挡。`);
+    logs.push({
+      kind: 'status',
+      actor: hero.name,
+      text: `${hero.name} 当前剩余 ${heroAfterEnemyTurns.block} 点格挡。`,
+    });
+  }
+
+  if (totalEnemyDamage > 0) {
+    logs.push({
+      kind: 'status',
+      actor: hero.name,
+      text: `${hero.name} 本回合累计承受 ${totalEnemyDamage} 点伤害。`,
+    });
   }
 
   return {
@@ -308,6 +338,30 @@ export function simulateBattleRound(
     heroRemainingBlock: heroAfterEnemyTurns.block,
     heroStatusEffects: heroAfterEnemyTurns.statusEffects,
     actionSummary: effect.summary,
-    logTexts: logs,
+    logEntries: logs,
   };
+}
+
+function totalSuffix(heroBlockGain: number) {
+  return heroBlockGain > 0 ? `，获得 ${heroBlockGain} 点格挡` : '';
+}
+
+function formatDamageOutcome(targetName: string, attemptedDamage: number, damageTaken: number, absorbed: number) {
+  if (attemptedDamage <= 0) {
+    return `${targetName}未受到伤害`;
+  }
+
+  if (damageTaken > 0 && absorbed > 0) {
+    return `${targetName}受到 ${damageTaken} 点伤害（格挡 ${absorbed}）`;
+  }
+
+  if (damageTaken > 0) {
+    return `${targetName}受到 ${damageTaken} 点伤害`;
+  }
+
+  if (absorbed > 0) {
+    return `伤害被格挡 ${absorbed}`;
+  }
+
+  return `${targetName}未受到伤害`;
 }

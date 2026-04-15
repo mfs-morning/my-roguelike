@@ -47,7 +47,7 @@ export type SelectRoomState = Pick<GameState, 'generatedMap' | 'hero'>;
 
 export type ClaimRewardState = Pick<
   GameState,
-  'pendingReward' | 'generatedMap' | 'hero' | 'unlockedBattleSkills' | 'battleTactics' | 'backEnemy'
+  'pendingReward' | 'generatedMap' | 'hero' | 'unlockedBattleSkills' | 'battleTactics' | 'backEnemy' | 'battleLog'
 >;
 
 export type BattleRoundState = Pick<

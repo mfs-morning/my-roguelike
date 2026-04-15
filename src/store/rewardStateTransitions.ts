@@ -53,7 +53,7 @@ export function resolveRewardClaimState(state: ClaimRewardState, choiceId?: stri
     activeRoomId: null,
     pendingReward: null,
     battleSummary: null,
-    currentView: remainingNodes.length === 0 ? 'town' : 'map',
+    currentView: 'reward',
     enemy: cloneEnemy(),
     backEnemy: null,
     battleTactics: appliedReward.grantedSkillId
@@ -62,6 +62,16 @@ export function resolveRewardClaimState(state: ClaimRewardState, choiceId?: stri
     unlockedBattleSkills: nextUnlockedBattleSkills,
     battleCooldowns: cloneBattleCooldowns(),
     battleSkillRuntimeState: cloneBattleSkillRuntimeState(),
-    battleLog: [{ id: crypto.randomUUID(), text: '你整理好状态，准备继续前进。' }],
+    battleLog: [
+      ...state.battleLog,
+      {
+        id: crypto.randomUUID(),
+        text: appliedReward.grantedSkillId
+          ? '你收下新技巧，稍作整备后准备继续前进。'
+          : remainingNodes.length === 0
+            ? '你整理好状态，准备返回城镇。'
+            : '你整理好状态，准备继续前进。',
+      },
+    ],
   };
 }

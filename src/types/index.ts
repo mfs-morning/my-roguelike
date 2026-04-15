@@ -177,6 +177,8 @@ export interface Enemy {
   enemySkillRuntimeState: EnemySkillRuntimeState;
 }
 
+export type BattleLogEntryKind = 'round' | 'hero_action' | 'enemy_action' | 'status' | 'system' | 'result';
+
 export interface BattleRoundResult {
   heroSkillId: BattleSkillId;
   enemySkillIds: EnemySkillId[];
@@ -191,7 +193,7 @@ export interface BattleRoundResult {
   heroRemainingBlock: number;
   heroStatusEffects: BattleStatusEffect[];
   actionSummary: string;
-  logTexts: string[];
+  logEntries: Omit<BattleLogEntry, 'id'>[];
 }
 
 // 兼容当前玩法流程的线性房间结构。
@@ -234,6 +236,9 @@ export interface GeneratedMap {
 // 战斗日志中的一条记录。
 export interface BattleLogEntry {
   id: string;
+  kind: BattleLogEntryKind;
+  round?: number;
+  actor?: string;
   text: string;
 }
 

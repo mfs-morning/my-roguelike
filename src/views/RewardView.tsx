@@ -1,7 +1,9 @@
 import { battleSkills } from '../core/skills/skills';
+import { getNextPlayableNodes } from '../core/map/mapProgress';
 import type { BattleSkillTag, CharacterClassId } from '../types';
 import { BattleLog } from '../components/BattleLog';
 import { Button } from '../components/ui/Button';
+import { HoverDetail } from '../components/ui/HoverDetail';
 import { Panel } from '../components/ui/Panel';
 import { SectionTitle } from '../components/ui/SectionTitle';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -30,17 +32,26 @@ export function RewardView() {
   const generatedMap = useGameStore((state) => state.generatedMap);
   const battleLog = useGameStore((state) => state.battleLog);
   const claimReward = useGameStore((state) => state.claimReward);
+  const setView = useGameStore((state) => state.setView);
 
   const clearedCount = generatedMap.nodes.filter((node) => node.cleared).length;
+  const nextView = getNextPlayableNodes(generatedMap).length === 0 ? 'town' : 'map';
 
   if (!pendingReward) {
     return (
-      <Panel className="grid gap-6">
-        <SectionTitle eyebrow="结算" title="当前没有待领取奖励" />
-        <div>
-          <Button onClick={() => claimReward()}>返回继续</Button>
-        </div>
-      </Panel>
+      <section className="grid gap-5">
+        <Panel className="grid gap-6">
+          <SectionTitle eyebrow="结算" title="奖励已领取" description="你可以先检查战斗日志，再决定何时继续前进。" />
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge>已清理 {clearedCount}/{generatedMap.nodes.length}</StatusBadge>
+          </div>
+          <div>
+            <Button onClick={() => setView(nextView)}>{nextView === 'town' ? '返回城镇' : '继续前进'}</Button>
+          </div>
+        </Panel>
+
+        <BattleLog entries={battleLog} />
+      </section>
     );
   }
 
@@ -96,30 +107,40 @@ export function RewardView() {
               <div className={`mt-5 grid gap-4 ${skillChoices.length >= 3 ? 'lg:grid-cols-3' : 'md:grid-cols-2'}`}>
                 {skillChoices.map((choice) => {
                   const skill = choice.grantedSkillId ? battleSkills[choice.grantedSkillId] : null;
+                  const hoverDescription = skill ? `${skill.description} ${skill.effectDescription}`.trim() : choice.description;
+
                   return (
-                    <button
+                    <HoverDetail
                       key={choice.id}
-                      type="button"
-                      onClick={() => claimReward(choice.id)}
-                      className="group rounded-[24px] border border-[rgba(96,165,250,0.2)] bg-[linear-gradient(180deg,rgba(96,165,250,0.1),rgba(15,23,42,0.35))] p-5 text-left transition-all duration-200 hover:-translate-y-1 hover:border-[rgba(96,165,250,0.45)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <StatusBadge tone="bright">技能</StatusBadge>
-                        <span className="text-lg text-sky-200 transition-transform duration-200 group-hover:translate-x-1">→</span>
-                      </div>
-                      <strong className="mt-4 block text-lg tracking-[0.06em] text-[var(--color-text-main)]">{choice.label}</strong>
-                      <p className="mt-3 mb-0 text-sm leading-6 text-[var(--color-text-muted)]">{choice.description}</p>
-                      {skill ? (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <StatusBadge>{classLabelMap[skill.classId]}</StatusBadge>
-                          {skill.tags.map((tag) => (
-                            <StatusBadge key={`${choice.id}-${tag}`} tone="bright">
-                              {tagLabelMap[tag]}
-                            </StatusBadge>
-                          ))}
-                        </div>
-                      ) : null}
-                    </button>
+                      align="center"
+                      title={choice.label}
+                      description={hoverDescription}
+                      className="w-full"
+                      trigger={
+                        <button
+                          type="button"
+                          onClick={() => claimReward(choice.id)}
+                          className="group w-full rounded-[24px] border border-[rgba(96,165,250,0.2)] bg-[linear-gradient(180deg,rgba(96,165,250,0.1),rgba(15,23,42,0.35))] p-5 text-left transition-all duration-200 hover:-translate-y-1 hover:border-[rgba(96,165,250,0.45)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <StatusBadge tone="bright">技能</StatusBadge>
+                            <span className="text-lg text-sky-200 transition-transform duration-200 group-hover:translate-x-1">→</span>
+                          </div>
+                          <strong className="mt-4 block text-lg tracking-[0.06em] text-[var(--color-text-main)]">{choice.label}</strong>
+                          <p className="mt-3 mb-0 text-sm leading-6 text-[var(--color-text-muted)]">{choice.description}</p>
+                          {skill ? (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <StatusBadge>{classLabelMap[skill.classId]}</StatusBadge>
+                              {skill.tags.map((tag) => (
+                                <StatusBadge key={`${choice.id}-${tag}`} tone="bright">
+                                  {tagLabelMap[tag]}
+                                </StatusBadge>
+                              ))}
+                            </div>
+                          ) : null}
+                        </button>
+                      }
+                    />
                   );
                 })}
               </div>

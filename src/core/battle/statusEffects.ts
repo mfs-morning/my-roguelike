@@ -1,5 +1,5 @@
 // 处理流血、中毒等状态效果的施加、叠加与回合开始结算。
-import type { BattleSkillExtraEffect, BattleStatusEffect, Character, Enemy } from '../../types';
+import type { BattleLogEntry, BattleSkillExtraEffect, BattleStatusEffect, Character, Enemy } from '../../types';
 
 interface ApplyStatusPayload {
   hero: Character;
@@ -19,7 +19,7 @@ interface ResolveStatusResult {
   remainingBlock: number;
   statusEffects: BattleStatusEffect[];
   totalDamage: number;
-  logs: string[];
+  logs: Omit<BattleLogEntry, 'id'>[];
 }
 
 const statusLabels: Record<BattleStatusEffect['kind'], string> = {
@@ -32,6 +32,7 @@ function applyDirectDamage(currentHp: number, currentBlock: number, damage: numb
   const damageTaken = Math.max(0, damage - absorbed);
 
   return {
+    absorbed,
     remainingHp: Math.max(0, currentHp - damageTaken),
     remainingBlock: Math.max(0, currentBlock - damage),
     damageTaken,
@@ -42,7 +43,7 @@ function applyDirectDamage(currentHp: number, currentBlock: number, damage: numb
 export function applySkillStatusEffects({ hero, enemy, effects }: ApplyStatusPayload) {
   const nextHeroStatusEffects = [...hero.statusEffects];
   const nextEnemyStatusEffects = [...enemy.statusEffects];
-  const logs: string[] = [];
+  const logs: Omit<BattleLogEntry, 'id'>[] = [];
 
   for (const effect of effects) {
     const targetEffects = effect.target === 'hero' ? nextHeroStatusEffects : nextEnemyStatusEffects;
@@ -61,7 +62,11 @@ export function applySkillStatusEffects({ hero, enemy, effects }: ApplyStatusPay
       });
     }
 
-    logs.push(`${targetName} 陷入${statusLabels[effect.kind]} ${effect.value} 点，持续 ${duration} 回合。`);
+    logs.push({
+      kind: 'status',
+      actor: targetName,
+      text: `${targetName} 陷入${statusLabels[effect.kind]} ${effect.value} 点，持续 ${duration} 回合。`,
+    });
   }
 
   return {
@@ -82,14 +87,20 @@ export function resolveStartOfTurnStatusEffects({
   let remainingBlock = currentBlock;
   let totalDamage = 0;
   const nextStatusEffects: BattleStatusEffect[] = [];
-  const logs: string[] = [];
+  const logs: Omit<BattleLogEntry, 'id'>[] = [];
 
   for (const effect of statusEffects) {
     const damageResult = applyDirectDamage(remainingHp, remainingBlock, effect.value);
     remainingHp = damageResult.remainingHp;
     remainingBlock = damageResult.remainingBlock;
     totalDamage += damageResult.damageTaken;
-    logs.push(`${actorName} 的${statusLabels[effect.kind]}生效，受到 ${damageResult.damageTaken} 点伤害。`);
+    logs.push({
+      kind: 'status',
+      actor: actorName,
+      text: damageResult.damageTaken > 0
+        ? `${actorName} 的${statusLabels[effect.kind]}生效，受到 ${damageResult.damageTaken} 点伤害${damageResult.absorbed > 0 ? `（格挡 ${damageResult.absorbed}）` : ''}。`
+        : `${actorName} 的${statusLabels[effect.kind]}生效，伤害被格挡 ${damageResult.absorbed}。`,
+    });
 
     if (effect.duration > 1) {
       nextStatusEffects.push({
@@ -107,4 +118,3 @@ export function resolveStartOfTurnStatusEffects({
     logs,
   };
 }
-

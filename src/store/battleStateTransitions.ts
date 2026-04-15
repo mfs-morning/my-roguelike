@@ -70,16 +70,16 @@ export function buildEnemyForRoom(
       : {};
   enemy.stats = {
     ...enemy.stats,
-    hp: roomKind === 'boss' ? 30 : roomKind === 'elite' ? 24 : profile === enemyTacticsProfiles.spider ? 14 : 16,
-    maxHp: roomKind === 'boss' ? 30 : roomKind === 'elite' ? 24 : profile === enemyTacticsProfiles.spider ? 14 : 16,
+    hp: roomKind === 'boss' ? 56 : roomKind === 'elite' ? 42 : profile === enemyTacticsProfiles.spider ? 26 : 30,
+    maxHp: roomKind === 'boss' ? 56 : roomKind === 'elite' ? 42 : profile === enemyTacticsProfiles.spider ? 26 : 30,
     strength: roomKind === 'boss' ? 6 : roomKind === 'elite' ? 5 : profile === enemyTacticsProfiles.guard ? 4 : profile === enemyTacticsProfiles.spider ? 3 : 3,
     agility: roomKind === 'elite' ? 1 : profile === enemyTacticsProfiles.spider ? 1 : 0,
   };
   if (position === 'back') {
     enemy.stats = {
       ...enemy.stats,
-      hp: Math.max(10, enemy.stats.hp - 4),
-      maxHp: Math.max(10, enemy.stats.maxHp - 4),
+      hp: Math.max(18, enemy.stats.hp - 4),
+      maxHp: Math.max(18, enemy.stats.maxHp - 4),
       strength: Math.max(3, enemy.stats.strength - 1),
     };
   }
@@ -99,7 +99,7 @@ export function createBattleEntryState(state: SelectRoomState, roomId: string, r
     enemy: buildEnemyForRoom(room.id, room.kind, 'front'),
     backEnemy: room.kind === 'boss' || room.kind === 'elite' ? buildEnemyForRoom(`${room.id}-back`, 'battle', 'back') : null,
     battleSummary: createEmptyBattleSummary(),
-    battleLog: [{ id: crypto.randomUUID(), text: `${room.label} 的敌人出现了。` }],
+    battleLog: [{ id: crypto.randomUUID(), kind: 'system', text: `${room.label} 的敌人出现了。` }],
     currentView: 'battle' as ViewName,
     pendingReward: null,
     battleCooldowns: cloneBattleCooldowns(),
@@ -137,15 +137,18 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
       hp: result.heroRemainingHp,
     },
   };
+  const roundNumber = (state.battleSummary?.rounds ?? 0) + 1;
   const nextLogs: BattleLogEntry[] = [
     ...state.battleLog,
-    ...result.logTexts.map((text) => ({
+    { id: crypto.randomUUID(), kind: 'round', round: roundNumber, text: `第 ${roundNumber} 回合` },
+    ...result.logEntries.map((entry) => ({
       id: crypto.randomUUID(),
-      text,
+      round: roundNumber,
+      ...entry,
     })),
   ];
   const nextSummary: BattleSummary = {
-    rounds: (state.battleSummary?.rounds ?? 0) + 1,
+    rounds: roundNumber,
     totalDamageDealt: (state.battleSummary?.totalDamageDealt ?? 0) + result.heroDamage,
     totalDamageTaken: (state.battleSummary?.totalDamageTaken ?? 0) + result.enemyDamage,
     remainingHp: result.heroRemainingHp,
@@ -173,12 +176,13 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
     const reward = grantedSkillChoices.length > 0 ? buildReward(currentNode, { grantedSkillChoices }) : buildReward(currentNode);
     const victoryLogs = [
       ...nextLogs,
-      { id: crypto.randomUUID(), text: `遭遇敌群已被击败，获得 ${reward.gold} 金币。` },
+      { id: crypto.randomUUID(), kind: 'result', text: `遭遇敌群已被击败，获得 ${reward.gold} 金币。` },
     ];
 
     if (reward.choices?.some((choice) => choice.grantedSkillId)) {
       victoryLogs.push({
         id: crypto.randomUUID(),
+        kind: 'result',
         text: `你发现了 ${reward.choices.length} 个可带走的新技能。`,
       });
     }
@@ -190,7 +194,7 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
       },
       enemy: result.nextEnemy ?? state.enemy,
       backEnemy: result.nextBackEnemy,
-      battleLog: victoryLogs,
+      battleLog: victoryLogs as BattleLogEntry[],
       battleSummary: nextSummary,
       battleCooldowns: nextCooldowns,
       battleSkillDropChance: reward.choices?.some((choice) => choice.grantedSkillId)
@@ -213,7 +217,7 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
     backEnemy: result.nextBackEnemy,
     battleLog: [
       ...nextLogs,
-      { id: crypto.randomUUID(), text: `${state.hero.name} 倒下了，本轮冒险结束。` },
+      { id: crypto.randomUUID(), kind: 'result', text: `${state.hero.name} 倒下了，本轮冒险结束。` },
     ],
     battleSummary: nextSummary,
     battleCooldowns: nextCooldowns,

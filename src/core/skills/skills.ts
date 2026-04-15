@@ -161,7 +161,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: defaultTacticConditions,
-    cooldown: 1,
+    cooldown: 2,
     template: 'attack',
     numbers: {
       damageMultiplier: 1.35,
@@ -176,7 +176,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'block'],
     availableConditions: defenseTacticConditions,
-    cooldown: 1,
+    cooldown: 2,
     template: 'gainBlock',
     numbers: {
       damageMultiplier: 0,
@@ -191,7 +191,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed'],
     availableConditions: offenseTacticConditions,
-    cooldown: 1,
+    cooldown: 2,
     template: 'attack',
     numbers: {
       damageMultiplier: 1,
@@ -207,7 +207,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: defaultTacticConditions,
-    cooldown: 1,
+    cooldown: 2,
     template: 'aoe',
     numbers: {
       damageMultiplier: 0.85,
@@ -222,7 +222,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: offenseTacticConditions,
-    cooldown: 2,
+    cooldown: 4,
     template: 'aoe',
     numbers: {
       damageMultiplier: 1.05,
@@ -237,7 +237,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: defaultTacticConditions,
-    cooldown: 1,
+    cooldown: 3,
     template: 'splashStrike',
     numbers: {
       damageMultiplier: 1.15,
@@ -256,7 +256,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: offenseTacticConditions,
-    cooldown: 2,
+    cooldown: 4,
     template: 'splashStrike',
     numbers: {
       damageMultiplier: 1.35,
@@ -275,7 +275,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
-    cooldown: 2,
+    cooldown: 4,
     template: 'execute',
     numbers: {
       damageMultiplier: 0.95,
@@ -292,7 +292,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed', 'poison'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
-    cooldown: 1,
+    cooldown: 3,
     template: 'statusBurst',
     numbers: {
       damageMultiplier: 0.75,
@@ -308,7 +308,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'block'],
     availableConditions: defaultTacticConditions,
-    cooldown: 1,
+    cooldown: 3,
     template: 'gainBlockAttack',
     numbers: {
       damageMultiplier: 0.9,
@@ -323,7 +323,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'block'],
     availableConditions: defenseTacticConditions,
-    cooldown: 2,
+    cooldown: 4,
     template: 'gainBlockAttack',
     numbers: {
       damageMultiplier: 0.6,
@@ -338,7 +338,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'poison'],
     availableConditions: offenseTacticConditions,
-    cooldown: 1,
+    cooldown: 2,
     template: 'attack',
     numbers: {
       damageMultiplier: 0.95,
@@ -354,7 +354,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed', 'poison'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
-    cooldown: 2,
+    cooldown: 5,
     template: 'statusBurst',
     numbers: {
       damageMultiplier: 0.9,
@@ -371,7 +371,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'bleed'],
     availableConditions: defaultTacticConditions,
-    cooldown: 2,
+    cooldown: 4,
     template: 'aoe',
     numbers: {
       damageMultiplier: 0.9,
@@ -387,7 +387,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'block'],
     availableConditions: defaultTacticConditions,
-    cooldown: 2,
+    cooldown: 4,
     template: 'aoe',
     numbers: {
       damageMultiplier: 0.8,
@@ -402,7 +402,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: offenseTacticConditions,
-    cooldown: 2,
+    cooldown: 4,
     template: 'splashStrike',
     numbers: {
       damageMultiplier: 1.2,
@@ -421,7 +421,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
-    cooldown: 1,
+    cooldown: 3,
     template: 'execute',
     numbers: {
       damageMultiplier: 1,
@@ -438,7 +438,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'poison'],
     availableConditions: ['always', 'enemy_hp_below_percent'],
-    cooldown: 2,
+    cooldown: 4,
     template: 'statusBurst',
     numbers: {
       damageMultiplier: 0.7,
@@ -455,7 +455,7 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
     classId: 'warrior',
     tags: ['warrior', 'strike', 'block'],
     availableConditions: defenseTacticConditions,
-    cooldown: 1,
+    cooldown: 3,
     template: 'gainBlockAttack',
     numbers: {
       damageMultiplier: 0.8,
@@ -466,12 +466,12 @@ export const battleSkills: Record<BattleSkillId, BattleSkillDefinition> = {
 };
 
 export const defaultBattleTactics: BattleTacticSlot[] = [
+  { skillId: 'guard', condition: { kind: 'always'} },
   { skillId: 'heavyStrike', condition: { kind: 'always' } },
-  { skillId: 'guard', condition: { kind: 'hero_hp_below_percent', value: 55 } },
   { skillId: 'attack', condition: { kind: 'always' } },
 ];
 
-export const defaultUnlockedBattleSkills: BattleSkillId[] = ['attack', 'heavyStrike', 'guard', 'rend'];
+export const defaultUnlockedBattleSkills: BattleSkillId[] = ['attack', 'heavyStrike', 'guard'];
 
 export const mockBattleSkillDropPool: BattleSkillId[] = [
   'sweepingSlash',
@@ -490,4 +490,5 @@ export const mockBattleSkillDropPool: BattleSkillId[] = [
   'reaperRush',
   'toxicDetonation',
   'shieldRam',
+  'rend'
 ];

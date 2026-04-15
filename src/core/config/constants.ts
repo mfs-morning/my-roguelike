@@ -13,8 +13,8 @@ export const starterHero: Character = {
   block: 0,
   statusEffects: [],
   stats: {
-    hp: 32,
-    maxHp: 32,
+    hp: 52,
+    maxHp: 52,
     strength: 7,
     agility: 2,
   },
