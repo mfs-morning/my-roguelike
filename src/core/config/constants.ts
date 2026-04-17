@@ -1,6 +1,7 @@
 // 集中定义开局角色、敌人模板与默认技能配置等全局常量。
-import type { BattleCooldownState, Character, Enemy } from '../../types';
+import type { BattleCooldownState, Character, Enemy, RunRelic } from '../../types';
 import { createEnemyCooldownState, enemyTacticsProfiles } from '../battle/enemyTactics';
+import { createStarterRelics } from '../relics/relics';
 import { battleSkills, defaultBattleTactics, defaultUnlockedBattleSkills } from '../skills/skills';
 
 // 默认开局主角数据。
@@ -39,6 +40,8 @@ export const starterEnemy: Enemy = {
 };
 
 export { battleSkills, defaultBattleTactics, defaultUnlockedBattleSkills };
+
+export const starterRelics: RunRelic[] = createStarterRelics();
 
 export function createBattleCooldownState(): BattleCooldownState {
   return Object.fromEntries(

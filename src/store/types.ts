@@ -12,6 +12,7 @@ import type {
   Character,
   Enemy,
   GeneratedMap,
+  RunRelic,
   ViewName,
 } from '../types';
 
@@ -20,6 +21,7 @@ export interface GameState {
   hero: Character;
   enemy: Enemy;
   backEnemy: Enemy | null;
+  relics: RunRelic[];
   generatedMap: GeneratedMap;
   battleLog: BattleLogEntry[];
   activeRoomId: string | null;
@@ -43,11 +45,11 @@ export interface GameState {
   claimReward: (choiceId?: string) => void;
 }
 
-export type SelectRoomState = Pick<GameState, 'generatedMap' | 'hero'>;
+export type SelectRoomState = Pick<GameState, 'generatedMap' | 'hero' | 'relics'>;
 
 export type ClaimRewardState = Pick<
   GameState,
-  'pendingReward' | 'generatedMap' | 'hero' | 'unlockedBattleSkills' | 'battleTactics' | 'backEnemy' | 'battleLog'
+  'pendingReward' | 'generatedMap' | 'hero' | 'unlockedBattleSkills' | 'battleTactics' | 'backEnemy' | 'battleLog' | 'relics'
 >;
 
 export type BattleRoundState = Pick<
@@ -65,6 +67,7 @@ export type BattleRoundState = Pick<
   | 'battleLog'
   | 'battleSummary'
   | 'unlockedBattleSkills'
+  | 'relics'
   | 'battleSkillDropChance'
 >;
 

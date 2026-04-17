@@ -5,6 +5,7 @@ import {
   defaultUnlockedBattleSkills,
   starterEnemy,
   starterHero,
+  starterRelics,
 } from '../core/config/constants';
 import { generateMapSkeleton } from '../core/map/generator';
 import type {
@@ -16,6 +17,7 @@ import type {
   BattleTacticSlot,
   Character,
   Enemy,
+  RunRelic,
   ViewName,
 } from '../types';
 
@@ -49,6 +51,10 @@ export function cloneBattleSkillRuntimeState() {
   return {} as BattleSkillRuntimeState;
 }
 
+export function cloneRelics() {
+  return structuredClone(starterRelics) as RunRelic[];
+}
+
 // 初始化一场战斗的统计摘要。
 export function createEmptyBattleSummary(): BattleSummary {
   return {
@@ -70,6 +76,7 @@ export interface GameBaseState {
   battleSummary: BattleSummary | null;
   battleTactics: BattleTacticSlot[];
   unlockedBattleSkills: BattleSkillId[];
+  relics: RunRelic[];
   battleSkillDropChance: number;
   battleCooldowns: BattleCooldownState;
   battleSkillRuntimeState: BattleSkillRuntimeState;
@@ -89,6 +96,7 @@ export function buildInitialState(initialSkillDropChance: number): GameBaseState
     battleSummary: null,
     battleTactics: cloneBattleTactics(),
     unlockedBattleSkills: cloneUnlockedBattleSkills(),
+    relics: cloneRelics(),
     battleSkillDropChance: initialSkillDropChance,
     battleCooldowns: cloneBattleCooldowns(),
     battleSkillRuntimeState: cloneBattleSkillRuntimeState(),

@@ -16,11 +16,12 @@ function App() {
   const unlockedBattleSkills = useGameStore((state) => state.unlockedBattleSkills);
   const battleCooldowns = useGameStore((state) => state.battleCooldowns);
   const battleSkillRuntimeState = useGameStore((state) => state.battleSkillRuntimeState);
+  const relics = useGameStore((state) => state.relics);
   const reorderBattlePriority = useGameStore((state) => state.reorderBattlePriority);
   const setBattleTacticCondition = useGameStore((state) => state.setBattleTacticCondition);
   const enableBattleSkill = useGameStore((state) => state.enableBattleSkill);
   const disableBattleSkill = useGameStore((state) => state.disableBattleSkill);
-  const effectiveSkillsMap = getEffectiveSkillMap(battleSkillRuntimeState, hero.stats);
+  const effectiveSkillsMap = getEffectiveSkillMap(battleSkillRuntimeState, hero.stats, relics);
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-8 text-[var(--color-text-main)] sm:px-6 lg:px-8">
@@ -40,6 +41,7 @@ function App() {
           <StatsCard
             title="冒险者面板"
             character={hero}
+            relics={relics}
             battleTactics={battleTactics}
             availableSkillIds={unlockedBattleSkills}
             battleCooldowns={battleCooldowns}

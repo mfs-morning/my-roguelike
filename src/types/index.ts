@@ -4,6 +4,7 @@ export type ViewName = 'town' | 'map' | 'battle' | 'reward';
 export type BattleOutcome = 'victory' | 'defeat';
 export type RoomKind = 'battle' | 'elite' | 'event' | 'treasure' | 'blessing' | 'boss' | 'rest';
 export type BattleSkillId = BattleSkillIdType;
+export type RelicId = 'weatheredCharm';
 export type EnemySkillId =
   | 'oozeSlam'
   | 'oozeBurst'
@@ -121,6 +122,53 @@ export interface EnemySkillDefinition {
   cooldown: number;
   template: BattleSkillTemplateId;
   numbers: BattleSkillNumbers;
+}
+
+export interface RunRelic {
+  id: RelicId;
+  stacks?: number;
+  state?: Record<string, number | string | boolean>;
+}
+
+export interface RelicSkillModifierContext {
+  relic: RunRelic;
+  skillId: BattleSkillId;
+  definition: BattleSkillDefinition;
+}
+
+export interface RelicEnemySkillModifierContext {
+  relic: RunRelic;
+  skillId: EnemySkillId;
+  definition: EnemySkillDefinition;
+}
+
+export interface RelicBattleStartContext {
+  relic: RunRelic;
+  hero: Character;
+  enemy: Enemy;
+  backEnemy: Enemy | null;
+  battleSkillRuntimeState: BattleSkillRuntimeState;
+}
+
+export interface RelicBattleStartResult {
+  hero?: Character;
+  enemy?: Enemy;
+  backEnemy?: Enemy | null;
+  battleSkillRuntimeState?: BattleSkillRuntimeState;
+  logs?: Omit<BattleLogEntry, 'id'>[];
+}
+
+export interface RelicHooks {
+  onBattleStart?: (context: RelicBattleStartContext) => RelicBattleStartResult | null | undefined;
+  modifyHeroSkill?: (context: RelicSkillModifierContext) => BattleSkillModifier | null | undefined;
+  modifyEnemySkill?: (context: RelicEnemySkillModifierContext) => BattleSkillModifier | null | undefined;
+}
+
+export interface RelicDefinition {
+  id: RelicId;
+  label: string;
+  description: string;
+  hooks?: RelicHooks;
 }
 
 export type BattleCooldownState = Record<BattleSkillId, number>;

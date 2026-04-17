@@ -3,7 +3,7 @@ import { skillTemplates } from '../skills/skillTemplates';
 import { pickEnemySkill, updateEnemyCooldowns } from './battlePriority';
 import { getEffectiveEnemySkill, getEffectiveSkill } from './effectiveSkills';
 import { applySkillStatusEffects, resolveStartOfTurnStatusEffects } from './statusEffects';
-import type { BattleLogEntry, BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy, EnemySkillId } from '../../types';
+import type { BattleLogEntry, BattleRoundResult, BattleSkillId, BattleSkillRuntimeState, Character, Enemy, EnemySkillId, RunRelic } from '../../types';
 
 // 计算本次攻击的基础伤害，至少造成 1 点。
 function getBaseDamage(strength: number, agility: number) {
@@ -23,8 +23,8 @@ function applyDamage(currentHp: number, currentBlock: number, incomingDamage: nu
   };
 }
 
-function resolveEnemySkill(hero: Character, enemy: Enemy, enemySkillId: EnemySkillId) {
-  const enemySkill = getEffectiveEnemySkill(enemySkillId, enemy.enemySkillRuntimeState, enemy.stats);
+function resolveEnemySkill(hero: Character, enemy: Enemy, enemySkillId: EnemySkillId, relics: RunRelic[] = []) {
+  const enemySkill = getEffectiveEnemySkill(enemySkillId, enemy.enemySkillRuntimeState, enemy.stats, relics);
   const baseEnemyDamage = getBaseDamage(enemy.stats.strength, hero.stats.agility);
   const effect = skillTemplates[enemySkill.template](
     {
@@ -96,10 +96,10 @@ function resolveEnemySkill(hero: Character, enemy: Enemy, enemySkillId: EnemySki
   };
 }
 
-function resolveSingleEnemyTurn(hero: Character, enemy: Enemy) {
+function resolveSingleEnemyTurn(hero: Character, enemy: Enemy, relics: RunRelic[] = []) {
   const enemySkillId = pickEnemySkill(enemy.tacticsProfile.tactics, enemy.enemyCooldowns, hero, enemy);
   const actionResult = enemySkillId
-    ? resolveEnemySkill(hero, enemy, enemySkillId)
+    ? resolveEnemySkill(hero, enemy, enemySkillId, relics)
     : {
         nextHero: hero,
         nextEnemy: enemy,
@@ -138,6 +138,7 @@ export function simulateBattleRound(
   backEnemy: Enemy | null,
   heroSkillId: BattleSkillId,
   runtimeState: BattleSkillRuntimeState = {},
+  relics: RunRelic[] = [],
 ): BattleRoundResult {
   const logs: Omit<BattleLogEntry, 'id'>[] = [];
 
@@ -186,7 +187,7 @@ export function simulateBattleRound(
 
   const baseHeroDamage = getBaseDamage(heroAfterStatus.stats.strength, enemy.stats.agility);
   const baseEnemyDamage = getBaseDamage(enemy.stats.strength, heroAfterStatus.stats.agility);
-  const skill = getEffectiveSkill(heroSkillId, runtimeState);
+  const skill = getEffectiveSkill(heroSkillId, runtimeState, undefined, relics);
   const effect = skillTemplates[skill.template](
     {
       hero: heroAfterStatus,
@@ -276,7 +277,7 @@ export function simulateBattleRound(
   const enemySkillIds: EnemySkillId[] = [];
 
   if (nextFrontEnemy && nextFrontEnemy.stats.hp > 0) {
-    const frontTurn = resolveSingleEnemyTurn(heroAfterEnemyTurns, nextFrontEnemy);
+    const frontTurn = resolveSingleEnemyTurn(heroAfterEnemyTurns, nextFrontEnemy, relics);
     heroAfterEnemyTurns = frontTurn.nextHero;
     nextFrontEnemy = frontTurn.nextEnemy;
     totalEnemyDamage += frontTurn.damageTaken;
@@ -287,7 +288,7 @@ export function simulateBattleRound(
   }
 
   if (nextBackEnemy && nextBackEnemy.stats.hp > 0) {
-    const backTurn = resolveSingleEnemyTurn(heroAfterEnemyTurns, nextBackEnemy);
+    const backTurn = resolveSingleEnemyTurn(heroAfterEnemyTurns, nextBackEnemy, relics);
     heroAfterEnemyTurns = backTurn.nextHero;
     nextBackEnemy = backTurn.nextEnemy;
     totalEnemyDamage += backTurn.damageTaken;

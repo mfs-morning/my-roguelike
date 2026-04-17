@@ -1,4 +1,5 @@
 // 管理进入战斗与推进战斗回合时的状态迁移逻辑。
+import { applyRelicsOnBattleStart } from '../core/relics/relics';
 import { createEnemyCooldownState, enemyTacticsProfiles } from '../core/battle/enemyTactics';
 import { starterEnemy } from '../core/config/constants';
 import { simulateBattleRound } from '../core/battle/engine';
@@ -89,8 +90,7 @@ export function buildEnemyForRoom(
 }
 
 export function createBattleEntryState(state: SelectRoomState, roomId: string, room: GeneratedMap['nodes'][number]): BattleEntryPatch {
-  return {
-    activeRoomId: roomId,
+  const battleStartState = applyRelicsOnBattleStart({
     hero: {
       ...state.hero,
       block: 0,
@@ -98,12 +98,27 @@ export function createBattleEntryState(state: SelectRoomState, roomId: string, r
     },
     enemy: buildEnemyForRoom(room.id, room.kind, 'front'),
     backEnemy: room.kind === 'boss' || room.kind === 'elite' ? buildEnemyForRoom(`${room.id}-back`, 'battle', 'back') : null,
+    battleSkillRuntimeState: cloneBattleSkillRuntimeState(),
+    relics: state.relics,
+  });
+
+  return {
+    activeRoomId: roomId,
+    hero: battleStartState.hero,
+    enemy: battleStartState.enemy,
+    backEnemy: battleStartState.backEnemy,
     battleSummary: createEmptyBattleSummary(),
-    battleLog: [{ id: crypto.randomUUID(), kind: 'system', text: `${room.label} 的敌人出现了。` }],
+    battleLog: [
+      { id: crypto.randomUUID(), kind: 'system', text: `${room.label} 的敌人出现了。` },
+      ...battleStartState.logs.map((entry) => ({
+        ...entry,
+        id: crypto.randomUUID(),
+      })),
+    ],
     currentView: 'battle' as ViewName,
     pendingReward: null,
     battleCooldowns: cloneBattleCooldowns(),
-    battleSkillRuntimeState: cloneBattleSkillRuntimeState(),
+    battleSkillRuntimeState: battleStartState.battleSkillRuntimeState,
   };
 }
 
@@ -123,7 +138,7 @@ export function resolveBattleRoundState(state: BattleRoundState): BattleRoundPat
 
   const targetEnemy = state.enemy.stats.hp > 0 ? state.enemy : state.backEnemy ?? state.enemy;
   const usedSkillId = pickHeroSkill(state.battleTactics, state.battleCooldowns, state.hero, targetEnemy);
-  const result = simulateBattleRound(state.hero, state.enemy, state.backEnemy, usedSkillId, state.battleSkillRuntimeState);
+  const result = simulateBattleRound(state.hero, state.enemy, state.backEnemy, usedSkillId, state.battleSkillRuntimeState, state.relics);
   const heroDefeated = result.heroRemainingHp <= 0;
   const enemyDefeated = !result.nextEnemy && !result.nextBackEnemy;
   const nextCooldowns = updateCooldowns(state.battleCooldowns, usedSkillId, state.battleSkillRuntimeState);

@@ -9,8 +9,10 @@ import type {
   BattleTacticCondition,
   BattleTacticSlot,
   Character,
+  RunRelic,
 } from '../types';
 import { battleSkills } from '../core/config/constants';
+import { RelicRack } from './relics/RelicRack';
 import { HealthBar } from './ui/HealthBar';
 import { Panel } from './ui/Panel';
 import { StatusBadge } from './ui/StatusBadge';
@@ -18,6 +20,7 @@ import { StatusBadge } from './ui/StatusBadge';
 interface StatsCardProps {
   title: string;
   character: Character;
+  relics?: RunRelic[];
   battleTactics?: BattleTacticSlot[];
   availableSkillIds?: BattleSkillId[];
   battleCooldowns?: BattleCooldownState;
@@ -32,6 +35,7 @@ interface StatsCardProps {
 export function StatsCard({
   title,
   character,
+  relics = [],
   battleTactics = [],
   availableSkillIds,
   battleCooldowns,
@@ -86,6 +90,8 @@ export function StatsCard({
             <span className="font-bold text-[var(--color-accent-bright)]">{character.gold}</span>
           </li>
         </ul>
+
+        <RelicRack relics={relics} />
 
         {canManageSkills ? (
           <SkillManagerButton
