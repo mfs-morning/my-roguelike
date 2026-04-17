@@ -13,8 +13,8 @@ export const starterHero: Character = {
   block: 0,
   statusEffects: [],
   stats: {
-    hp: 52,
-    maxHp: 52,
+    hp: 100,
+    maxHp: 100,
     strength: 7,
     agility: 2,
   },
@@ -31,8 +31,8 @@ export const starterEnemy: Enemy = {
   enemyCooldowns: createEnemyCooldownState(['oozeSlam', 'oozeBurst', 'oozeGuard']),
   enemySkillRuntimeState: {},
   stats: {
-    hp: 18,
-    maxHp: 18,
+    hp: 100,
+    maxHp: 100,
     strength: 4,
     agility: 0,
   },

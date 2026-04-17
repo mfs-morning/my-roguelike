@@ -29,7 +29,10 @@ export function resolveRewardClaimState(state: ClaimRewardState, choiceId?: stri
 
   const nextMap = markNodeCleared(state.generatedMap, appliedReward.nodeId);
   const nextMaxHp = state.hero.stats.maxHp + appliedReward.maxHpBoost;
-  const nextHp = Math.min(nextMaxHp, state.hero.stats.hp + appliedReward.maxHpBoost + appliedReward.heal);
+  const hpAfterMaxHpBoost = state.hero.stats.hp + appliedReward.maxHpBoost;
+  const missingHp = Math.max(0, nextMaxHp - hpAfterMaxHpBoost);
+  const postBattleRecovery = missingHp > 0 ? Math.max(10, Math.floor(missingHp * 0.5)) : 0;
+  const nextHp = Math.min(nextMaxHp, hpAfterMaxHpBoost + postBattleRecovery + appliedReward.heal);
   const nextHero: Character = {
     ...state.hero,
     block: 0,
@@ -68,10 +71,10 @@ export function resolveRewardClaimState(state: ClaimRewardState, choiceId?: stri
         id: crypto.randomUUID(),
         kind: 'system',
         text: appliedReward.grantedSkillId
-          ? '你收下新技巧，稍作整备后准备继续前进。'
+          ? '你收下新技巧，恢复了部分体力后准备继续前进。'
           : remainingNodes.length === 0
-            ? '你整理好状态，准备返回城镇。'
-            : '你整理好状态，准备继续前进。',
+            ? '你整理好状态，恢复了部分体力，准备返回城镇。'
+            : '你整理好状态，恢复了部分体力，准备继续前进。',
       },
     ],
   };

@@ -70,8 +70,8 @@ export function buildEnemyForRoom(
       : {};
   enemy.stats = {
     ...enemy.stats,
-    hp: roomKind === 'boss' ? 56 : roomKind === 'elite' ? 42 : profile === enemyTacticsProfiles.spider ? 26 : 30,
-    maxHp: roomKind === 'boss' ? 56 : roomKind === 'elite' ? 42 : profile === enemyTacticsProfiles.spider ? 26 : 30,
+    hp: roomKind === 'boss' ? 56 : roomKind === 'elite' ? 42 : profile === enemyTacticsProfiles.spider ? 26 : 100,
+    maxHp: roomKind === 'boss' ? 56 : roomKind === 'elite' ? 42 : profile === enemyTacticsProfiles.spider ? 26 : 100,
     strength: roomKind === 'boss' ? 6 : roomKind === 'elite' ? 5 : profile === enemyTacticsProfiles.guard ? 4 : profile === enemyTacticsProfiles.spider ? 3 : 3,
     agility: roomKind === 'elite' ? 1 : profile === enemyTacticsProfiles.spider ? 1 : 0,
   };
